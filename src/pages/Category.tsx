@@ -1,117 +1,148 @@
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
-import Sidebar from '@/components/Sidebar';
-import FilterBar from '@/components/FilterBar';
 import DealCard from '@/components/DealCard';
+import FilterBar from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import { mockDeals, type Deal } from '@/data/mockData';
-import { categories } from '@/data/categories';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowLeft, Tag } from 'lucide-react';
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+}
+
+interface Deal {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  original_price: number;
+  discounted_price: number;
+  discount_percentage: number;
+  heat_score: number;
+  upvotes: number;
+  downvotes: number;
+  created_at: string;
+  affiliate_link: string;
+  shops: { name: string; slug: string; logo_url: string };
+}
 
 const Category = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [category, setCategory] = useState<Category | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState('heat');
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [currentCategory, setCurrentCategory] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
-    const category = categories.find(cat => cat.slug === slug);
-    setCurrentCategory(category);
-    
-    if (category) {
-      document.title = `${category.name} Deals | Deal Heat Wave`;
-      document.querySelector('meta[name="description"]')?.setAttribute('content', `Find the best ${category.name.toLowerCase()} deals, discounts, and offers. ${category.description}`);
-      
-      // Filter deals by category
-      setIsLoading(true);
-      setTimeout(() => {
-        const categoryDeals = mockDeals.filter(deal => 
-          deal.category.toLowerCase() === category.name.toLowerCase()
-        );
-        setDeals(categoryDeals);
-        setIsLoading(false);
-      }, 500);
+    if (slug) {
+      fetchCategoryData();
     }
-  }, [slug]);
+  }, [slug, sortBy]);
 
-  const handleMenuToggle = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const fetchCategoryData = async () => {
+    if (!slug) return;
 
-  const handleFilterChange = (filters: string[]) => {
-    setActiveFilters(filters);
-  };
+    setLoading(true);
 
-  const handleSortChange = (sort: string) => {
-    setSortBy(sort);
-  };
+    // Fetch category details
+    const { data: categoryData, error: categoryError } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('slug', slug)
+      .single();
 
-  const loadMore = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const newDeals = [...mockDeals].map(deal => ({
-        ...deal,
-        id: deal.id + '_' + Math.random(),
-        postedTime: '1 day ago'
-      })).filter(deal => 
-        deal.category.toLowerCase() === currentCategory?.name.toLowerCase()
-      );
-      setDeals(prev => [...prev, ...newDeals]);
-      setIsLoading(false);
-      
-      if (deals.length > 15) {
-        setHasMore(false);
-      }
-    }, 1500);
-  };
+    if (categoryError) {
+      console.error('Error fetching category:', categoryError);
+      setLoading(false);
+      return;
+    }
 
-  const filteredDeals = deals.filter(deal => {
-    if (activeFilters.length === 0) return true;
-    
-    return activeFilters.some(filter => {
-      switch (filter) {
-        case 'hot':
-          return deal.heatScore >= 80;
-        case 'trending':
-          return deal.upvotes > 100;
-        case 'new':
-          return deal.postedTime.includes('hour');
-        case 'top-rated':
-          return deal.heatScore >= 70;
-        default:
-          return true;
-      }
-    });
-  });
+    setCategory(categoryData);
 
-  const sortedDeals = [...filteredDeals].sort((a, b) => {
+    // Fetch deals for this category
+    let query = supabase
+      .from('deals')
+      .select(`
+        *,
+        shops:shop_id (name, slug, logo_url)
+      `)
+      .eq('category_id', categoryData.id)
+      .eq('status', 'approved');
+
+    // Apply sorting
     switch (sortBy) {
-      case 'heat':
-        return b.heatScore - a.heatScore;
+      case 'hot':
+        query = query.order('heat_score', { ascending: false });
+        break;
       case 'newest':
-        return a.postedTime.localeCompare(b.postedTime);
-      case 'price-low':
-        return a.discountedPrice - b.discountedPrice;
-      case 'price-high':
-        return b.discountedPrice - a.discountedPrice;
+        query = query.order('created_at', { ascending: false });
+        break;
       case 'discount':
-        return b.discountPercentage - a.discountPercentage;
+        query = query.order('discount_percentage', { ascending: false });
+        break;
       default:
-        return b.heatScore - a.heatScore;
+        query = query.order('created_at', { ascending: false });
     }
-  });
 
-  if (!currentCategory) {
+    const { data: dealsData, error: dealsError } = await query;
+
+    if (!dealsError) {
+      setDeals(dealsData || []);
+    }
+
+    setLoading(false);
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Category Not Found</h1>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <Skeleton className="h-8 w-32 mb-6" />
+            <div className="mb-8">
+              <Skeleton className="h-10 w-64 mb-2" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-10 w-full mb-6" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-80" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto text-center">
+            <Tag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Category not found
+            </h1>
+            <p className="text-gray-600 mb-6">
+              The category you're looking for doesn't exist or has been removed.
+            </p>
+            <Button asChild>
+              <Link to="/">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -119,99 +150,72 @@ const Category = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header onMenuToggle={handleMenuToggle} isMenuOpen={isSidebarOpen} />
-      
-      <div className="flex">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        
-        <main className="flex-1 md:ml-64">
-          <FilterBar
-            activeFilters={activeFilters}
-            onFilterChange={handleFilterChange}
-            sortBy={sortBy}
-            onSortChange={handleSortChange}
-          />
-          
-          <div className="container px-4 py-6">
-            {/* Category header */}
-            <div className="bg-gradient-to-r from-primary to-orange-600 rounded-2xl p-8 mb-8 text-white">
-              <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
-                  <currentCategory.icon className="w-8 h-8" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold mb-2">{currentCategory.name} Deals</h1>
-                  <p className="text-xl opacity-90">{currentCategory.description}</p>
-                </div>
-              </div>
-            </div>
+      <Header />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Back Button */}
+          <Button variant="ghost" asChild className="mb-6">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Link>
+          </Button>
 
-            {/* Deals grid */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">
-                  {activeFilters.length > 0 ? 'Filtered Deals' : 'Latest Deals'}
-                </h2>
-                <div className="text-sm text-muted-foreground">
-                  Showing {sortedDeals.length} deals
-                </div>
-              </div>
-              
-              {isLoading && deals.length === 0 ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  <span className="ml-2 text-muted-foreground">Loading deals...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    {sortedDeals.map((deal, index) => (
-                      <div 
-                        key={deal.id}
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        <DealCard deal={deal} />
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {hasMore && sortedDeals.length > 0 && (
-                    <div className="flex justify-center py-8">
-                      <Button 
-                        onClick={loadMore} 
-                        disabled={isLoading}
-                        variant="outline"
-                        size="lg"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Loading more deals...
-                          </>
-                        ) : (
-                          'Load More Deals'
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {!hasMore && deals.length > 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      You've reached the end! Check back later for more deals.
-                    </div>
-                  )}
-                  
-                  {sortedDeals.length === 0 && !isLoading && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold mb-2">No deals found</h3>
-                      <p className="text-muted-foreground">Try adjusting your filters or check back later</p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+          {/* Category Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {category.name} Deals
+            </h1>
+            {category.description && (
+              <p className="text-gray-600">{category.description}</p>
+            )}
+            <p className="text-sm text-gray-500 mt-2">
+              {deals.length} deals found
+            </p>
           </div>
-        </main>
+
+          <FilterBar onSortChange={setSortBy} currentSort={sortBy} />
+
+          {deals.length === 0 ? (
+            <div className="text-center py-12">
+              <Tag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No deals found in {category.name}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Be the first to post a deal in this category!
+              </p>
+              <Button asChild>
+                <Link to="/post-deal">Post a Deal</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {deals.map((deal) => (
+                <DealCard
+                  key={deal.id}
+                  id={deal.id}
+                  title={deal.title}
+                  description={deal.description}
+                  image={deal.image_url}
+                  originalPrice={deal.original_price}
+                  discountedPrice={deal.discounted_price}
+                  discountPercentage={deal.discount_percentage}
+                  category={category.name}
+                  categorySlug={category.slug}
+                  shop={deal.shops?.name || 'Unknown Shop'}
+                  shopSlug={deal.shops?.slug || 'unknown'}
+                  shopLogo={deal.shops?.logo_url}
+                  heatScore={deal.heat_score}
+                  upvotes={deal.upvotes}
+                  downvotes={deal.downvotes}
+                  postedTime={deal.created_at}
+                  affiliateLink={deal.affiliate_link}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

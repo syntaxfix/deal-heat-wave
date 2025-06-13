@@ -1,185 +1,162 @@
 
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Flame, 
-  ThumbsUp, 
-  ThumbsDown, 
-  MessageCircle, 
-  ExternalLink,
-  Clock,
-  Eye,
-  Tag
-} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Clock, ExternalLink, Store } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import VotingSystem from './VotingSystem';
 
-interface Deal {
+interface DealCardProps {
   id: string;
   title: string;
   description: string;
-  image: string;
-  shopName: string;
-  shopLogo: string;
+  image?: string;
   originalPrice: number;
   discountedPrice: number;
   discountPercentage: number;
+  category: string;
+  categorySlug: string;
+  shop: string;
+  shopSlug: string;
+  shopLogo?: string;
   heatScore: number;
   upvotes: number;
   downvotes: number;
-  comments: number;
-  views: number;
-  expiry: string;
-  category: string;
-  affiliateLink: string;
-  postedBy: string;
   postedTime: string;
+  affiliateLink?: string;
 }
 
-interface DealCardProps {
-  deal: Deal;
-}
-
-const getHeatColor = (score: number) => {
-  if (score >= 80) return 'heat-gradient-hot';
-  if (score >= 60) return 'heat-gradient-warm';
-  if (score >= 40) return 'heat-gradient-cool';
-  return 'heat-gradient-cold';
-};
-
-const getHeatLevel = (score: number) => {
-  if (score >= 80) return 'Fire';
-  if (score >= 60) return 'Hot';
-  if (score >= 40) return 'Warm';
-  return 'Cool';
-};
-
-const DealCard: React.FC<DealCardProps> = ({ deal }) => {
-  const handleAffiliateClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // Cloaked affiliate link handling - not crawlable by bots
-    const affiliateUrl = e.currentTarget.getAttribute('data-url');
-    if (affiliateUrl) {
-      // Track click analytics here if needed
-      console.log('Affiliate click tracked:', deal.id);
-      window.open(affiliateUrl, '_blank', 'noopener,noreferrer');
-    }
+const DealCard = ({
+  id,
+  title,
+  description,
+  image,
+  originalPrice,
+  discountedPrice,
+  discountPercentage,
+  category,
+  categorySlug,
+  shop,
+  shopSlug,
+  shopLogo,
+  heatScore,
+  upvotes,
+  downvotes,
+  postedTime,
+  affiliateLink
+}: DealCardProps) => {
+  const getHeatColor = (score: number) => {
+    if (score >= 90) return 'bg-red-500';
+    if (score >= 50) return 'bg-orange-500';
+    if (score >= 0) return 'bg-yellow-500';
+    return 'bg-blue-500';
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-slide-up">
+    <Card className="group hover:shadow-lg transition-all duration-200 border-0 shadow-md">
       <CardContent className="p-0">
-        <div className="flex flex-col sm:flex-row">
-          {/* Image */}
-          <div className="relative w-full sm:w-48 h-48 sm:h-32">
-            <img 
-              src={deal.image} 
-              alt={deal.title}
-              className="w-full h-full object-cover rounded-t-lg sm:rounded-l-lg sm:rounded-t-none"
-              loading="lazy"
-            />
-            <div className="absolute top-2 left-2">
-              <Badge variant="secondary" className="text-xs">
-                <Tag className="w-3 h-3 mr-1" />
-                {deal.category}
+        {/* Image Section */}
+        <Link to={`/deal/${id}`}>
+          <div className="relative aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
+            {image ? (
+              <img
+                src={image}
+                alt={title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
+                <Store className="h-12 w-12 text-gray-400" />
+              </div>
+            )}
+            
+            {/* Discount Badge */}
+            <div className="absolute top-3 right-3">
+              <Badge className="bg-green-600 hover:bg-green-700 text-white font-bold">
+                {discountPercentage}% OFF
               </Badge>
             </div>
           </div>
+        </Link>
 
-          {/* Content */}
-          <div className="flex-1 p-4">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg leading-tight mb-1 group-hover:text-primary transition-colors">
-                  {deal.title}
-                </h3>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                  {deal.description}
-                </p>
-              </div>
-              
-              {/* Heat Score */}
-              <div className="flex flex-col items-center ml-4">
-                <div className={`
-                  w-16 h-16 rounded-full flex flex-col items-center justify-center text-white font-bold text-sm
-                  ${getHeatColor(deal.heatScore)} animate-heat-pulse
-                `}>
-                  <Flame className="w-4 h-4 mb-1" />
-                  {deal.heatScore}°
-                </div>
-                <span className="text-xs text-muted-foreground mt-1">
-                  {getHeatLevel(deal.heatScore)}
-                </span>
-              </div>
-            </div>
-
-            {/* Shop and Price */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <img 
-                  src={deal.shopLogo} 
-                  alt={deal.shopName}
-                  className="w-6 h-6 rounded"
-                />
-                <span className="text-sm font-medium">{deal.shopName}</span>
-              </div>
-              
-              <div className="text-right">
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg font-bold text-primary">
-                    £{deal.discountedPrice}
-                  </span>
-                  <span className="text-sm text-muted-foreground line-through">
-                    £{deal.originalPrice}
-                  </span>
-                </div>
-                <Badge variant="destructive" className="text-xs">
-                  -{deal.discountPercentage}%
-                </Badge>
-              </div>
-            </div>
-
-            {/* Stats and Actions */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                <div className="flex items-center space-x-1">
-                  <Eye className="w-4 h-4" />
-                  <span>{deal.views}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <MessageCircle className="w-4 h-4" />
-                  <span>{deal.comments}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Clock className="w-4 h-4" />
-                  <span>{deal.expiry}</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center space-x-1">
-                  <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-700">
-                    <ThumbsUp className="w-4 h-4" />
-                    <span className="ml-1 text-xs">{deal.upvotes}</span>
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                    <ThumbsDown className="w-4 h-4" />
-                    <span className="ml-1 text-xs">{deal.downvotes}</span>
-                  </Button>
-                </div>
-                
-                <Button 
-                  onClick={handleAffiliateClick}
-                  data-url={deal.affiliateLink}
-                  className="bg-primary hover:bg-primary/90"
-                  rel="nofollow noindex"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Get Deal
-                </Button>
-              </div>
+        <div className="p-4 space-y-3">
+          {/* Category and Shop */}
+          <div className="flex items-center justify-between">
+            <Link 
+              to={`/category/${categorySlug}`}
+              className="text-xs text-primary hover:underline font-medium"
+            >
+              {category}
+            </Link>
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={shopLogo} />
+                <AvatarFallback className="text-xs">
+                  {shop.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <Link 
+                to={`/shop/${shopSlug}`}
+                className="text-xs text-gray-600 hover:text-primary"
+              >
+                {shop}
+              </Link>
             </div>
           </div>
+
+          {/* Title */}
+          <Link to={`/deal/${id}`}>
+            <h3 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-primary transition-colors">
+              {title}
+            </h3>
+          </Link>
+
+          {/* Description */}
+          {description && (
+            <p className="text-sm text-gray-600 line-clamp-2">
+              {description}
+            </p>
+          )}
+
+          {/* Price Section */}
+          <div className="flex items-center space-x-2">
+            <span className="text-lg font-bold text-green-600">
+              ${discountedPrice.toFixed(2)}
+            </span>
+            <span className="text-sm text-gray-500 line-through">
+              ${originalPrice.toFixed(2)}
+            </span>
+          </div>
+
+          {/* Voting and Time */}
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            <VotingSystem
+              dealId={id}
+              initialUpvotes={upvotes}
+              initialDownvotes={downvotes}
+              initialHeatScore={heatScore}
+            />
+            
+            <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <Clock className="h-3 w-3" />
+              <span>{formatDistanceToNow(new Date(postedTime), { addSuffix: true })}</span>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          {affiliateLink && (
+            <a
+              href={affiliateLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center space-x-2 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>Get Deal</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
         </div>
       </CardContent>
     </Card>

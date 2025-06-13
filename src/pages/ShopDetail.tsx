@@ -1,55 +1,174 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
-import Sidebar from '@/components/Sidebar';
 import DealCard from '@/components/DealCard';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, Copy, Check } from 'lucide-react';
-import { mockShops, type Shop } from '@/data/shopsData';
-import { mockDeals, type Deal } from '@/data/mockData';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Store, ExternalLink, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface Shop {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  logo_url: string;
+  website_url: string;
+  category: string;
+}
+
+interface Deal {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  original_price: number;
+  discounted_price: number;
+  discount_percentage: number;
+  heat_score: number;
+  upvotes: number;
+  downvotes: number;
+  created_at: string;
+  affiliate_link: string;
+  categories: { name: string; slug: string };
+}
+
+interface Coupon {
+  id: string;
+  title: string;
+  description: string;
+  code: string;
+  discount_percentage: number;
+  discount_amount: number;
+  expires_at: string;
+  verified: boolean;
+}
 
 const ShopDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [shop, setShop] = useState<Shop | null>(null);
-  const [relatedDeals, setRelatedDeals] = useState<Deal[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
-    const foundShop = mockShops.find(s => s.slug === slug);
-    setShop(foundShop || null);
-    
-    if (foundShop) {
-      document.title = `${foundShop.name} Deals & Coupons | Deal Heat Wave`;
-      document.querySelector('meta[name="description"]')?.setAttribute('content', `Find the latest ${foundShop.name} deals, discount codes, and cashback offers. ${foundShop.description}`);
-      
-      // Get related deals (simulate filtering by shop)
-      const shopDeals = mockDeals.filter(deal => deal.shopName === foundShop.name).slice(0, 6);
-      setRelatedDeals(shopDeals);
+    if (slug) {
+      fetchShopData();
     }
   }, [slug]);
 
-  const handleMenuToggle = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+  const fetchShopData = async () => {
+    if (!slug) return;
+
+    // Fetch shop details
+    const { data: shopData, error: shopError } = await supabase
+      .from('shops')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (shopError) {
+      console.error('Error fetching shop:', shopError);
+      setLoading(false);
+      return;
+    }
+
+    setShop(shopData);
+
+    // Fetch deals for this shop
+    const { data: dealsData, error: dealsError } = await supabase
+      .from('deals')
+      .select(`
+        *,
+        categories:category_id (name, slug)
+      `)
+      .eq('shop_id', shopData.id)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (!dealsError) {
+      setDeals(dealsData || []);
+    }
+
+    // Fetch coupons for this shop
+    const { data: couponsData, error: couponsError } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('shop_id', shopData.id)
+      .order('created_at', { ascending: false });
+
+    if (!couponsError) {
+      setCoupons(couponsData || []);
+    }
+
+    setLoading(false);
   };
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
+  const handleCopyCoupon = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      toast.success('Coupon code copied!');
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (error) {
+      toast.error('Failed to copy coupon code');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <Skeleton className="h-8 w-32 mb-6" />
+            <div className="flex items-center space-x-4 mb-8">
+              <Skeleton className="h-20 w-20 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-full mb-6" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-80" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!shop) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Shop Not Found</h1>
-          <Link to="/shops">
-            <Button>Back to Shops</Button>
-          </Link>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto text-center">
+            <Store className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Shop not found
+            </h1>
+            <p className="text-gray-600 mb-6">
+              The shop you're looking for doesn't exist or has been removed.
+            </p>
+            <Button asChild>
+              <Link to="/shops">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Shops
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -57,110 +176,178 @@ const ShopDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header onMenuToggle={handleMenuToggle} isMenuOpen={isSidebarOpen} />
-      
-      <div className="flex">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-        
-        <main className="flex-1 md:ml-64">
-          <div className="container px-4 py-6">
-            {/* Back button */}
-            <Link to="/shops" className="inline-flex items-center text-muted-foreground hover:text-primary mb-6">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to All Shops
+      <Header />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Back Button */}
+          <Button variant="ghost" asChild className="mb-6">
+            <Link to="/shops">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Shops
             </Link>
+          </Button>
 
-            {/* Shop header */}
-            <div className="bg-white rounded-2xl p-8 mb-8 shadow-sm">
-              <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
-                <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                  <img 
-                    src={shop.logo}
-                    alt={shop.name}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                
+          {/* Shop Header */}
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-6">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={shop.logo_url} alt={shop.name} />
+                  <AvatarFallback>
+                    <Store className="h-10 w-10" />
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold mb-2">{shop.name}</h1>
-                  <p className="text-muted-foreground mb-4">{shop.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {shop.activeDeals > 0 && (
-                      <Badge variant="default">
-                        {shop.activeDeals} Active Deals
-                      </Badge>
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h1 className="text-3xl font-bold text-gray-900">{shop.name}</h1>
+                    {shop.category && (
+                      <Badge variant="secondary">{shop.category}</Badge>
                     )}
-                    {shop.coupons.length > 0 && (
-                      <Badge variant="secondary">
-                        {shop.coupons.length} Coupon Codes
-                      </Badge>
-                    )}
-                    <Badge variant="outline">{shop.category}</Badge>
                   </div>
-                  
-                  <Button asChild>
-                    <a href={shop.website} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Visit {shop.name}
-                    </a>
-                  </Button>
+                  {shop.description && (
+                    <p className="text-gray-600 mb-4">{shop.description}</p>
+                  )}
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm text-gray-600">
+                      {deals.length} active deals
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      {coupons.length} coupons
+                    </span>
+                    {shop.website_url && (
+                      <a
+                        href={shop.website_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-1 text-sm text-primary hover:underline"
+                      >
+                        <span>Visit Store</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Coupon codes */}
-            {shop.coupons.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Active Coupon Codes</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {shop.coupons.map((coupon) => (
-                    <Card key={coupon.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <Badge variant={coupon.verified ? "default" : "outline"}>
-                            {coupon.verified ? "Verified" : "Unverified"}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            Expires: {coupon.expiryDate}
-                          </span>
+          {/* Tabs */}
+          <Tabs defaultValue="deals" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="deals">Deals ({deals.length})</TabsTrigger>
+              <TabsTrigger value="coupons">Coupons ({coupons.length})</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="deals">
+              {deals.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No deals available
+                    </h3>
+                    <p className="text-gray-600">
+                      Check back soon for new deals from {shop.name}!
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {deals.map((deal) => (
+                    <DealCard
+                      key={deal.id}
+                      id={deal.id}
+                      title={deal.title}
+                      description={deal.description}
+                      image={deal.image_url}
+                      originalPrice={deal.original_price}
+                      discountedPrice={deal.discounted_price}
+                      discountPercentage={deal.discount_percentage}
+                      category={deal.categories?.name || 'General'}
+                      categorySlug={deal.categories?.slug || 'general'}
+                      shop={shop.name}
+                      shopSlug={shop.slug}
+                      shopLogo={shop.logo_url}
+                      heatScore={deal.heat_score}
+                      upvotes={deal.upvotes}
+                      downvotes={deal.downvotes}
+                      postedTime={deal.created_at}
+                      affiliateLink={deal.affiliate_link}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="coupons">
+              {coupons.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No coupons available
+                    </h3>
+                    <p className="text-gray-600">
+                      Check back soon for new coupons from {shop.name}!
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {coupons.map((coupon) => (
+                    <Card key={coupon.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{coupon.title}</CardTitle>
+                          {coupon.verified && (
+                            <Badge className="bg-green-600">Verified</Badge>
+                          )}
                         </div>
-                        
-                        <h3 className="font-semibold mb-2">{coupon.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-4">{coupon.description}</p>
-                        
-                        <div className="flex items-center space-x-2">
-                          <div className="flex-1 bg-gray-100 rounded-lg p-3 font-mono text-center font-bold">
-                            {coupon.code}
+                        {coupon.description && (
+                          <CardDescription>{coupon.description}</CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-600">Code:</span>
+                            <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
+                              {coupon.code}
+                            </code>
                           </div>
                           <Button
-                            variant="outline"
                             size="sm"
-                            onClick={() => handleCopyCode(coupon.code)}
+                            onClick={() => handleCopyCoupon(coupon.code)}
+                            className="flex items-center space-x-1"
                           >
-                            {copiedCode === coupon.code ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {copiedCode === coupon.code ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            <span>{copiedCode === coupon.code ? 'Copied' : 'Copy'}</span>
                           </Button>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600">
+                          {coupon.discount_percentage && (
+                            <p>Save {coupon.discount_percentage}%</p>
+                          )}
+                          {coupon.discount_amount && (
+                            <p>Save ${coupon.discount_amount}</p>
+                          )}
+                          {coupon.expires_at && (
+                            <p>Expires: {new Date(coupon.expires_at).toLocaleDateString()}</p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Related deals */}
-            {relatedDeals.length > 0 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-4">Latest {shop.name} Deals</h2>
-                <div className="space-y-4">
-                  {relatedDeals.map((deal) => (
-                    <DealCard key={deal.id} deal={deal} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </main>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
