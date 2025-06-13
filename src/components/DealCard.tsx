@@ -55,10 +55,15 @@ const getHeatLevel = (score: number) => {
 };
 
 const DealCard: React.FC<DealCardProps> = ({ deal }) => {
-  const handleAffiliateClick = () => {
-    // Cloaked affiliate link handling
-    console.log('Redirecting to:', deal.affiliateLink);
-    window.open(deal.affiliateLink, '_blank', 'noopener,noreferrer');
+  const handleAffiliateClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Cloaked affiliate link handling - not crawlable by bots
+    const affiliateUrl = e.currentTarget.getAttribute('data-url');
+    if (affiliateUrl) {
+      // Track click analytics here if needed
+      console.log('Affiliate click tracked:', deal.id);
+      window.open(affiliateUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -121,7 +126,7 @@ const DealCard: React.FC<DealCardProps> = ({ deal }) => {
               
               <div className="text-right">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg font-bold text-deals-hot">
+                  <span className="text-lg font-bold text-primary">
                     £{deal.discountedPrice}
                   </span>
                   <span className="text-sm text-muted-foreground line-through">
@@ -165,7 +170,9 @@ const DealCard: React.FC<DealCardProps> = ({ deal }) => {
                 
                 <Button 
                   onClick={handleAffiliateClick}
-                  className="bg-deals-hot hover:bg-deals-fire"
+                  data-url={deal.affiliateLink}
+                  className="bg-primary hover:bg-primary/90"
+                  rel="nofollow noindex"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Get Deal
