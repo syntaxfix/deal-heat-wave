@@ -20,7 +20,7 @@ interface Comment {
     username: string;
     full_name: string;
     avatar_url: string;
-  };
+  } | null;
   replies?: Comment[];
 }
 
@@ -45,7 +45,7 @@ export default function CommentSection({ dealId }: CommentSectionProps) {
       .from('comments')
       .select(`
         *,
-        profiles:user_id (username, full_name, avatar_url)
+        profiles!comments_user_id_fkey (username, full_name, avatar_url)
       `)
       .eq('deal_id', dealId)
       .order('created_at', { ascending: true });
@@ -154,7 +154,7 @@ export default function CommentSection({ dealId }: CommentSectionProps) {
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-2">
                 <span className="font-medium text-sm">
-                  {comment.profiles?.full_name || comment.profiles?.username}
+                  {comment.profiles?.full_name || comment.profiles?.username || 'Anonymous'}
                 </span>
                 <span className="text-xs text-gray-500">
                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}

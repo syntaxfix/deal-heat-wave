@@ -22,7 +22,7 @@ interface BlogPost {
   profiles: {
     username: string;
     full_name: string;
-  };
+  } | null;
 }
 
 const Blog = () => {
@@ -38,7 +38,7 @@ const Blog = () => {
       .from('blog_posts')
       .select(`
         *,
-        profiles:author_id (username, full_name)
+        profiles!blog_posts_author_id_fkey (username, full_name)
       `)
       .eq('status', 'published')
       .order('created_at', { ascending: false });

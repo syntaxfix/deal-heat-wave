@@ -18,7 +18,7 @@ interface Deal {
   discounted_price: number;
   status: string;
   created_at: string;
-  profiles: { username: string; full_name: string };
+  profiles: { username: string; full_name: string } | null;
 }
 
 interface User {
@@ -66,7 +66,7 @@ export default function Admin() {
       .from('deals')
       .select(`
         *,
-        profiles:user_id (username, full_name)
+        profiles!deals_user_id_fkey (username, full_name)
       `)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -180,7 +180,7 @@ export default function Admin() {
                         <div>
                           <CardTitle className="text-lg">{deal.title}</CardTitle>
                           <CardDescription>
-                            Posted by @{deal.profiles?.username} on{' '}
+                            Posted by @{deal.profiles?.username || 'Unknown'} on{' '}
                             {new Date(deal.created_at).toLocaleDateString()}
                           </CardDescription>
                         </div>

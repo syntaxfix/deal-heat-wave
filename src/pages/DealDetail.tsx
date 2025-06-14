@@ -28,9 +28,9 @@ interface Deal {
   affiliate_link: string;
   created_at: string;
   expires_at: string;
-  categories: { name: string; slug: string };
-  shops: { name: string; slug: string; logo_url: string };
-  profiles: { username: string; full_name: string; avatar_url: string };
+  categories: { name: string; slug: string } | null;
+  shops: { name: string; slug: string; logo_url: string } | null;
+  profiles: { username: string; full_name: string; avatar_url: string } | null;
 }
 
 const DealDetail = () => {
@@ -52,9 +52,9 @@ const DealDetail = () => {
       .from('deals')
       .select(`
         *,
-        categories:category_id (name, slug),
-        shops:shop_id (name, slug, logo_url),
-        profiles:user_id (username, full_name, avatar_url)
+        categories!deals_category_id_fkey (name, slug),
+        shops!deals_shop_id_fkey (name, slug, logo_url),
+        profiles!deals_user_id_fkey (username, full_name, avatar_url)
       `)
       .eq('id', id)
       .eq('status', 'approved')
@@ -77,10 +77,8 @@ const DealDetail = () => {
   const incrementViews = async () => {
     if (!id) return;
 
-    await supabase
-      .from('deals')
-      .update({ views: supabase.sql`views + 1` })
-      .eq('id', id);
+    // Use RPC function to increment views safely
+    await supabase.rpc('increment_deal_views', { deal_id: id });
   };
 
   if (loading) {
@@ -206,17 +204,17 @@ const DealDetail = () => {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-3">
                       <span className="text-3xl font-bold text-green-600">
-                        ${deal.discounted_price.toFixed(2)}
+                        ${deal.discounted_price?.toFixed(2)}
                       </span>
                       <span className="text-lg text-gray-500 line-through">
-                        ${deal.original_price.toFixed(2)}
+                        ${deal.original_price?.toFixed(2)}
                       </span>
                       <Badge className="bg-green-600 text-white">
                         {deal.discount_percentage}% OFF
                       </Badge>
                     </div>
                     <p className="text-sm text-green-600 font-medium">
-                      You save ${(deal.original_price - deal.discounted_price).toFixed(2)}
+                      You save ${((deal.original_price || 0) - (deal.discounted_price || 0)).toFixed(2)}
                     </p>
                   </div>
 

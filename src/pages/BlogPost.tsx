@@ -26,7 +26,7 @@ interface BlogPost {
     username: string;
     full_name: string;
     avatar_url: string;
-  };
+  } | null;
 }
 
 const BlogPost = () => {
@@ -47,7 +47,7 @@ const BlogPost = () => {
       .from('blog_posts')
       .select(`
         *,
-        profiles:author_id (username, full_name, avatar_url)
+        profiles!blog_posts_author_id_fkey (username, full_name, avatar_url)
       `)
       .eq('slug', slug)
       .eq('status', 'published')
