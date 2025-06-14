@@ -1,43 +1,22 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
-import DealCard from '@/components/DealCard';
+import DealListings from '@/components/DealListings';
+import SearchBar from '@/components/SearchBar';
 import FilterBar from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Package, Flame, Store, BookOpen } from 'lucide-react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-
-interface Deal {
-  id: string;
-  title: string;
-  description?: string;
-  summary?: string;
-  image_url?: string;
-  original_price?: number;
-  discounted_price?: number;
-  discount_percentage?: number;
-  slug?: string;
-  created_at: string;
-  upvotes?: number;
-  downvotes?: number;
-  heat_score?: number;
-  affiliate_link?: string;
-  categories?: { name: string; slug: string };
-  shops?: { name: string; slug: string; logo_url?: string };
-}
 
 const Index = () => {
-  const [deals, setDeals] = useState<Deal[]>([]);
   const [featuredShops, setFeaturedShops] = useState<any[]>([]);
   const [featuredCategories, setFeaturedCategories] = useState<any[]>([]);
   const [latestBlogs, setLatestBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentSort, setCurrentSort] = useState('hot');
 
   useEffect(() => {
@@ -46,7 +25,6 @@ const Index = () => {
 
   const fetchInitialData = async () => {
     await Promise.all([
-      fetchDeals(true),
       fetchFeaturedShops(),
       fetchFeaturedCategories(),
       fetchLatestBlogs(),
@@ -95,78 +73,13 @@ const Index = () => {
     }
   };
 
-  const fetchDeals = async (initialLoad = false) => {
-    if (initialLoad) {
-      setPage(1);
-      setHasMore(true);
-    }
-
-    const { data, error } = await supabase
-      .from('deals')
-      .select(`
-        *,
-        categories(name, slug),
-        shops(name, slug, logo_url)
-      `)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false })
-      .range((page - 1) * 9, page * 9 - 1);
-
-    if (error) {
-      console.error('Error fetching deals:', error);
-    } else {
-      const mappedDeals = (data || []).map(deal => ({
-        ...deal,
-        // Use description if available, otherwise use empty string
-        summary: deal.description || ''
-      }));
-
-      if (initialLoad) {
-        setDeals(mappedDeals);
-      } else {
-        setDeals((prevDeals) => [...prevDeals, ...mappedDeals]);
-      }
-
-      if (data && data.length < 9) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
-    }
-  };
-
-  const loadMoreDeals = async () => {
-    setPage((prevPage) => prevPage + 1);
-    await fetchDeals();
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
   const handleSortChange = (sort: string) => {
     setCurrentSort(sort);
-    // Implement sorting logic here
-    console.log('Sorting by:', sort);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="pt-6">
-                  <Skeleton className="h-40 w-full mb-4" />
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-full mb-4" />
-                  <Skeleton className="h-4 w-2/3" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -174,18 +87,27 @@ const Index = () => {
       
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-primary to-primary/80 text-white py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            Discover Amazing Deals
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 opacity-90">
-            Save money with the best deals, discounts, and offers from top brands
-          </p>
-          <Link to="/post-deal">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
-              Post a Deal
-            </Button>
-          </Link>
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4">
+              Discover Amazing Deals
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 opacity-90">
+              Save money with the best deals, discounts, and offers from top brands
+            </p>
+          </div>
+          
+          <div className="max-w-2xl mx-auto mb-6">
+            <SearchBar onSearch={handleSearch} placeholder="Search for deals, brands, or products..." />
+          </div>
+          
+          <div className="text-center">
+            <Link to="/post-deal">
+              <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
+                Post a Deal
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -263,45 +185,7 @@ const Index = () => {
             <FilterBar onSortChange={handleSortChange} currentSort={currentSort} />
           </div>
 
-          {deals.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No deals available
-                </h3>
-                <p className="text-gray-600">
-                  Check back soon for amazing deals and discounts!
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <InfiniteScroll
-              dataLength={deals.length}
-              next={loadMoreDeals}
-              hasMore={hasMore}
-              loader={
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Card key={i}>
-                      <CardContent className="pt-6">
-                        <Skeleton className="h-40 w-full mb-4" />
-                        <Skeleton className="h-6 w-3/4 mb-2" />
-                        <Skeleton className="h-4 w-full mb-4" />
-                        <Skeleton className="h-4 w-2/3" />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              }
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {deals.map((deal) => (
-                  <DealCard key={deal.id} deal={deal} />
-                ))}
-              </div>
-            </InfiniteScroll>
-          )}
+          <DealListings searchQuery={searchQuery} sortBy={currentSort} />
         </section>
 
         {/* Latest Blog Posts */}

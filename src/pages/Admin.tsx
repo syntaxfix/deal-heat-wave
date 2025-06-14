@@ -51,7 +51,7 @@ export default function Admin() {
       .eq('id', user.id)
       .single();
 
-    if (error || !profile || !['admin', 'moderator'].includes(profile.role)) {
+    if (error || !profile || !['admin', 'moderator', 'root_admin'].includes(profile.role)) {
       toast.error('Access denied. Admin privileges required.');
       return;
     }
@@ -62,7 +62,6 @@ export default function Admin() {
   };
 
   const fetchPendingDeals = async () => {
-    // First get deals
     const { data: dealsData, error: dealsError } = await supabase
       .from('deals')
       .select('*')
@@ -79,10 +78,8 @@ export default function Admin() {
       return;
     }
 
-    // Get unique user IDs
     const userIds = [...new Set(dealsData.map(deal => deal.user_id).filter(Boolean))];
 
-    // Get profiles for these users
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
       .select('id, username, full_name')
@@ -92,7 +89,6 @@ export default function Admin() {
       console.error('Error fetching profiles:', profilesError);
     }
 
-    // Create a map of user_id to profile
     const profilesMap = new Map();
     if (profilesData) {
       profilesData.forEach(profile => {
@@ -100,7 +96,6 @@ export default function Admin() {
       });
     }
 
-    // Combine deals with profiles
     const dealsWithProfiles = dealsData.map(deal => ({
       ...deal,
       profiles: deal.user_id ? profilesMap.get(deal.user_id) || null : null
@@ -158,7 +153,7 @@ export default function Admin() {
     setIsLoading(false);
   };
 
-  if (!userProfile || !['admin', 'moderator'].includes(userProfile.role)) {
+  if (!userProfile || !['admin', 'moderator', 'root_admin'].includes(userProfile.role)) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
@@ -274,7 +269,7 @@ export default function Admin() {
                         <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                           {user.role}
                         </Badge>
-                        {userProfile.role === 'admin' && user.id !== userProfile.id && (
+                        {(userProfile.role === 'admin' || userProfile.role === 'root_admin') && user.id !== userProfile.id && (
                           <select
                             value={user.role}
                             onChange={(e) => updateUserRole(user.id, e.target.value)}
@@ -283,7 +278,9 @@ export default function Admin() {
                           >
                             <option value="user">User</option>
                             <option value="moderator">Moderator</option>
-                            <option value="admin">Admin</option>
+                            {userProfile.role === 'root_admin' && (
+                              <option value="admin">Admin</option>
+                            )}
                           </select>
                         )}
                       </div>

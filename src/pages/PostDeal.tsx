@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Flame, Upload } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import Header from '@/components/Header';
 
 interface Category {
@@ -41,7 +42,6 @@ const PostDeal = () => {
   });
 
   useEffect(() => {
-    // Redirect to login if not authenticated
     if (!user) {
       toast.error('Please sign in to post a deal');
       navigate('/login');
@@ -88,6 +88,14 @@ const PostDeal = () => {
     return 0;
   };
 
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
+      .trim();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -95,6 +103,7 @@ const PostDeal = () => {
     setIsLoading(true);
 
     const discountPercentage = calculateDiscountPercentage();
+    const slug = generateSlug(formData.title);
 
     const { error } = await supabase
       .from('deals')
@@ -109,6 +118,7 @@ const PostDeal = () => {
         category_id: formData.categoryId,
         shop_id: formData.shopId,
         user_id: user.id,
+        slug: slug,
         status: 'pending'
       });
 

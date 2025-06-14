@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,17 +8,12 @@ import { toast } from 'sonner';
 
 interface VotingSystemProps {
   dealId: string;
-  initialUpvotes?: number;
-  initialDownvotes?: number;
-  initialHeatScore?: number;
+  initialUpvotes: number;
+  initialDownvotes: number;
+  initialHeatScore: number;
 }
 
-export default function VotingSystem({ 
-  dealId, 
-  initialUpvotes = 0, 
-  initialDownvotes = 0, 
-  initialHeatScore = 0 
-}: VotingSystemProps) {
+const VotingSystem = ({ dealId, initialUpvotes, initialDownvotes, initialHeatScore }: VotingSystemProps) => {
   const { user } = useAuth();
   const [upvotes, setUpvotes] = useState(initialUpvotes);
   const [downvotes, setDownvotes] = useState(initialDownvotes);
@@ -34,26 +30,28 @@ export default function VotingSystem({
   const fetchUserVote = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('deal_votes')
       .select('vote_type')
       .eq('deal_id', dealId)
       .eq('user_id', user.id)
       .single();
 
-    if (!error && data) {
+    if (data) {
       setUserVote(data.vote_type as 'up' | 'down');
     }
   };
 
   const handleVote = async (voteType: 'up' | 'down') => {
     if (!user) {
-      toast.error('Please sign in to vote on deals');
+      toast.error('Please sign in to vote');
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      // If user already voted the same way, remove the vote
+      // Remove existing vote if same type
       if (userVote === voteType) {
         const { error } = await supabase
           .from('deal_votes')
@@ -61,18 +59,16 @@ export default function VotingSystem({
           .eq('deal_id', dealId)
           .eq('user_id', user.id);
 
-        if (error) {
-          toast.error('Unable to remove vote. Please try again.');
-          return;
-        }
+        if (error) throw error;
 
         setUserVote(null);
         if (voteType === 'up') {
-          setUpvotes(upvotes - 1);
+          setUpvotes(prev => prev - 1);
+          setHeatScore(prev => prev - 2);
         } else {
-          setDownvotes(downvotes - 1);
+          setDownvotes(prev => prev - 1);
+          setHeatScore(prev => prev + 1);
         }
-        toast.success('Vote removed');
       } else {
         // Insert or update vote
         const { error } = await supabase
@@ -80,81 +76,91 @@ export default function VotingSystem({
           .upsert({
             deal_id: dealId,
             user_id: user.id,
-            vote_type: voteType,
+            vote_type: voteType
           });
 
-        if (error) {
-          toast.error('Unable to cast vote. Please try again.');
-          return;
-        }
+        if (error) throw error;
 
         // Update local state
-        const previousVote = userVote;
-        setUserVote(voteType);
-
-        if (previousVote === 'up' && voteType === 'down') {
-          setUpvotes(upvotes - 1);
-          setDownvotes(downvotes + 1);
-        } else if (previousVote === 'down' && voteType === 'up') {
-          setDownvotes(downvotes - 1);
-          setUpvotes(upvotes + 1);
-        } else if (voteType === 'up') {
-          setUpvotes(upvotes + 1);
+        if (userVote) {
+          // Switching vote type
+          if (userVote === 'up' && voteType === 'down') {
+            setUpvotes(prev => prev - 1);
+            setDownvotes(prev => prev + 1);
+            setHeatScore(prev => prev - 3); // -2 for removing upvote, -1 for adding downvote
+          } else if (userVote === 'down' && voteType === 'up') {
+            setDownvotes(prev => prev - 1);
+            setUpvotes(prev => prev + 1);
+            setHeatScore(prev => prev + 3); // +1 for removing downvote, +2 for adding upvote
+          }
         } else {
-          setDownvotes(downvotes + 1);
+          // New vote
+          if (voteType === 'up') {
+            setUpvotes(prev => prev + 1);
+            setHeatScore(prev => prev + 2);
+          } else {
+            setDownvotes(prev => prev + 1);
+            setHeatScore(prev => prev - 1);
+          }
         }
 
-        toast.success(`Deal ${voteType}voted!`);
+        setUserVote(voteType);
       }
     } catch (error) {
-      console.error('Error handling vote:', error);
-      toast.error('Something went wrong. Please try again.');
+      console.error('Error voting:', error);
+      toast.error('Failed to vote');
     }
+
+    setIsLoading(false);
   };
 
-  const getHeatDisplay = () => {
-    if (heatScore >= 90) return { temp: `${heatScore}°`, icon: '🔥', color: 'text-red-600' };
-    if (heatScore >= 50) return { temp: `${heatScore}°`, icon: '🌡️', color: 'text-orange-500' };
-    if (heatScore >= 0) return { temp: `${heatScore}°`, icon: '😐', color: 'text-yellow-500' };
-    return { temp: `${heatScore}°`, icon: '🧊', color: 'text-blue-500' };
+  const getHeatColor = () => {
+    if (heatScore >= 50) return 'text-red-600';
+    if (heatScore >= 20) return 'text-orange-500';
+    if (heatScore >= 10) return 'text-yellow-500';
+    return 'text-gray-500';
   };
-
-  const heat = getHeatDisplay();
 
   return (
-    <div className="flex items-center space-x-4">
-      {/* Voting Buttons */}
-      <div className="flex flex-col items-center space-y-1">
+    <div className="flex items-center space-x-2">
+      <div className="flex items-center">
         <Button
+          variant="ghost"
           size="sm"
-          variant={userVote === 'up' ? 'default' : 'outline'}
           onClick={() => handleVote('up')}
           disabled={isLoading}
-          className="h-8 w-8 p-0"
+          className={`p-1 h-8 ${userVote === 'up' ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:text-green-600'}`}
         >
           <ChevronUp className="h-4 w-4" />
         </Button>
-        <span className="text-sm font-medium">{upvotes}</span>
+        <span className="text-sm font-medium min-w-[2rem] text-center">
+          {upvotes}
+        </span>
       </div>
 
-      <div className="flex flex-col items-center space-y-1">
+      <div className="flex items-center">
         <Button
+          variant="ghost"
           size="sm"
-          variant={userVote === 'down' ? 'destructive' : 'outline'}
           onClick={() => handleVote('down')}
           disabled={isLoading}
-          className="h-8 w-8 p-0"
+          className={`p-1 h-8 ${userVote === 'down' ? 'text-red-600 bg-red-50' : 'text-gray-500 hover:text-red-600'}`}
         >
           <ChevronDown className="h-4 w-4" />
         </Button>
-        <span className="text-sm font-medium">{downvotes}</span>
+        <span className="text-sm font-medium min-w-[2rem] text-center">
+          {downvotes}
+        </span>
       </div>
 
-      {/* Heat Score */}
-      <div className="flex items-center space-x-2 px-3 py-1 bg-gray-100 rounded-full">
-        <span className="text-lg">{heat.icon}</span>
-        <span className={`font-bold ${heat.color}`}>{heat.temp}</span>
+      <div className="flex items-center space-x-1 ml-2">
+        <Flame className={`h-4 w-4 ${getHeatColor()}`} />
+        <span className={`text-sm font-bold ${getHeatColor()}`}>
+          {heatScore}°
+        </span>
       </div>
     </div>
   );
-}
+};
+
+export default VotingSystem;
