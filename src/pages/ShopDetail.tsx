@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +26,7 @@ interface Deal {
   id: string;
   title: string;
   description: string;
+  summary?: string;
   image_url: string;
   original_price: number;
   discounted_price: number;
@@ -36,6 +36,7 @@ interface Deal {
   downvotes: number;
   created_at: string;
   affiliate_link: string;
+  slug?: string;
   categories: { name: string; slug: string };
 }
 
@@ -94,7 +95,12 @@ const ShopDetail = () => {
       .order('created_at', { ascending: false });
 
     if (!dealsError) {
-      setDeals(dealsData || []);
+      // Transform the data to match the expected Deal interface
+      const transformedDeals = (dealsData || []).map(deal => ({
+        ...deal,
+        shops: { name: shopData.name, slug: shopData.slug, logo_url: shopData.logo_url }
+      }));
+      setDeals(transformedDeals);
     }
 
     // Fetch coupons for this shop
@@ -254,26 +260,7 @@ const ShopDetail = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {deals.map((deal) => (
-                    <DealCard
-                      key={deal.id}
-                      id={deal.id}
-                      title={deal.title}
-                      description={deal.description}
-                      image={deal.image_url}
-                      originalPrice={deal.original_price}
-                      discountedPrice={deal.discounted_price}
-                      discountPercentage={deal.discount_percentage}
-                      category={deal.categories?.name || 'General'}
-                      categorySlug={deal.categories?.slug || 'general'}
-                      shop={shop.name}
-                      shopSlug={shop.slug}
-                      shopLogo={shop.logo_url}
-                      heatScore={deal.heat_score}
-                      upvotes={deal.upvotes}
-                      downvotes={deal.downvotes}
-                      postedTime={deal.created_at}
-                      affiliateLink={deal.affiliate_link}
-                    />
+                    <DealCard key={deal.id} deal={deal} />
                   ))}
                 </div>
               )}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -118,7 +117,8 @@ const Index = () => {
     } else {
       const mappedDeals = (data || []).map(deal => ({
         ...deal,
-        summary: deal.description || deal.summary || ''
+        // Use description if available, otherwise use empty string
+        summary: deal.description || ''
       }));
 
       if (initialLoad) {
