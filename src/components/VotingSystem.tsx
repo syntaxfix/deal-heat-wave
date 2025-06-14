@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,16 +7,16 @@ import { toast } from 'sonner';
 
 interface VotingSystemProps {
   dealId: string;
-  initialUpvotes: number;
-  initialDownvotes: number;
-  initialHeatScore: number;
+  initialUpvotes?: number;
+  initialDownvotes?: number;
+  initialHeatScore?: number;
 }
 
 export default function VotingSystem({ 
   dealId, 
-  initialUpvotes, 
-  initialDownvotes, 
-  initialHeatScore 
+  initialUpvotes = 0, 
+  initialDownvotes = 0, 
+  initialHeatScore = 0 
 }: VotingSystemProps) {
   const { user } = useAuth();
   const [upvotes, setUpvotes] = useState(initialUpvotes);
@@ -49,71 +48,68 @@ export default function VotingSystem({
 
   const handleVote = async (voteType: 'up' | 'down') => {
     if (!user) {
-      toast.error('Please sign in to vote');
+      toast.error('Please sign in to vote on deals');
       return;
     }
 
-    setIsLoading(true);
-
     try {
+      // If user already voted the same way, remove the vote
       if (userVote === voteType) {
-        // Remove vote
         const { error } = await supabase
           .from('deal_votes')
           .delete()
           .eq('deal_id', dealId)
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          toast.error('Unable to remove vote. Please try again.');
+          return;
+        }
 
         setUserVote(null);
         if (voteType === 'up') {
-          setUpvotes(prev => prev - 1);
+          setUpvotes(upvotes - 1);
         } else {
-          setDownvotes(prev => prev - 1);
+          setDownvotes(downvotes - 1);
         }
+        toast.success('Vote removed');
       } else {
-        // Add or update vote
+        // Insert or update vote
         const { error } = await supabase
           .from('deal_votes')
           .upsert({
             deal_id: dealId,
             user_id: user.id,
-            vote_type: voteType
+            vote_type: voteType,
           });
 
-        if (error) throw error;
+        if (error) {
+          toast.error('Unable to cast vote. Please try again.');
+          return;
+        }
 
         // Update local state
-        if (userVote) {
-          // Changing vote type
-          if (userVote === 'up') {
-            setUpvotes(prev => prev - 1);
-            setDownvotes(prev => prev + 1);
-          } else {
-            setDownvotes(prev => prev - 1);
-            setUpvotes(prev => prev + 1);
-          }
-        } else {
-          // New vote
-          if (voteType === 'up') {
-            setUpvotes(prev => prev + 1);
-          } else {
-            setDownvotes(prev => prev + 1);
-          }
-        }
+        const previousVote = userVote;
         setUserVote(voteType);
+
+        if (previousVote === 'up' && voteType === 'down') {
+          setUpvotes(upvotes - 1);
+          setDownvotes(downvotes + 1);
+        } else if (previousVote === 'down' && voteType === 'up') {
+          setDownvotes(downvotes - 1);
+          setUpvotes(upvotes + 1);
+        } else if (voteType === 'up') {
+          setUpvotes(upvotes + 1);
+        } else {
+          setDownvotes(downvotes + 1);
+        }
+
+        toast.success(`Deal ${voteType}voted!`);
       }
-
-      // Update heat score
-      const newHeatScore = (upvotes * 2) - downvotes;
-      setHeatScore(newHeatScore);
-
-    } catch (error: any) {
-      toast.error('Failed to vote: ' + error.message);
+    } catch (error) {
+      console.error('Error handling vote:', error);
+      toast.error('Something went wrong. Please try again.');
     }
-
-    setIsLoading(false);
   };
 
   const getHeatDisplay = () => {

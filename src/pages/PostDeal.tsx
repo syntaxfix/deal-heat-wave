@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,7 +23,7 @@ interface Shop {
   slug: string;
 }
 
-export default function PostDeal() {
+const PostDeal = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -42,11 +41,13 @@ export default function PostDeal() {
   });
 
   useEffect(() => {
+    // Redirect to login if not authenticated
     if (!user) {
-      navigate('/auth', { state: { from: { pathname: '/post-deal' } } });
+      toast.error('Please sign in to post a deal');
+      navigate('/login');
       return;
     }
-
+    
     fetchCategories();
     fetchShops();
   }, [user, navigate]);
@@ -126,7 +127,14 @@ export default function PostDeal() {
   };
 
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Authentication Required</h2>
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -134,6 +142,13 @@ export default function PostDeal() {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Post a Deal</h1>
+            <p className="text-gray-600">
+              Share an amazing deal with the DealSpark community and help others save money!
+            </p>
+          </div>
+
           <Card>
             <CardHeader>
               <div className="flex items-center space-x-3">
@@ -278,4 +293,6 @@ export default function PostDeal() {
       </div>
     </div>
   );
-}
+};
+
+export default PostDeal;

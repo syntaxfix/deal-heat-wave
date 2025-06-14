@@ -13,9 +13,16 @@ import ShopDetail from "./pages/ShopDetail";
 import Category from "./pages/Category";
 import DealDetail from "./pages/DealDetail";
 import Auth from "./pages/Auth";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import RootLogin from "./pages/RootLogin";
+import RootDashboard from "./pages/RootDashboard";
 import Profile from "./pages/Profile";
 import PostDeal from "./pages/PostDeal";
 import Admin from "./pages/Admin";
+import Contact from "./pages/Contact";
+import StaticPage from "./pages/StaticPage";
+import TagPage from "./pages/TagPage";
 import NotFound from "./pages/NotFound";
 import CookieConsent from "./components/CookieConsent";
 import Footer from "./components/Footer";
@@ -32,12 +39,21 @@ const App = () => (
           <div className="min-h-screen flex flex-col">
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/deal/:id" element={<DealDetail />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/root/login" element={<RootLogin />} />
+              <Route path="/root/dashboard" element={<RootDashboard />} />
+              <Route path="/deal/:slug" element={<DealDetail />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/tag/:slug" element={<TagPage />} />
               <Route path="/shops" element={<Shops />} />
               <Route path="/shop/:slug" element={<ShopDetail />} />
               <Route path="/category/:slug" element={<Category />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/about" element={<StaticPage />} />
+              <Route path="/privacy" element={<StaticPage />} />
+              <Route path="/terms" element={<StaticPage />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/post-deal" element={<PostDeal />} />

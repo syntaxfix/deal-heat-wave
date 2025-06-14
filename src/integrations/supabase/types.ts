@@ -12,11 +12,15 @@ export type Database = {
       blog_posts: {
         Row: {
           author_id: string | null
+          canonical_url: string | null
           category: string | null
           content: string | null
           created_at: string | null
           featured_image: string | null
           id: string
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
           read_time: number | null
           slug: string
           status: string | null
@@ -27,11 +31,15 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
+          canonical_url?: string | null
           category?: string | null
           content?: string | null
           created_at?: string | null
           featured_image?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           read_time?: number | null
           slug: string
           status?: string | null
@@ -42,11 +50,15 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
+          canonical_url?: string | null
           category?: string | null
           content?: string | null
           created_at?: string | null
           featured_image?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           read_time?: number | null
           slug?: string
           status?: string | null
@@ -57,28 +69,73 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_tags: {
+        Row: {
+          blog_post_id: string | null
+          id: string
+          tag_id: string | null
+        }
+        Insert: {
+          blog_post_id?: string | null
+          id?: string
+          tag_id?: string | null
+        }
+        Update: {
+          blog_post_id?: string | null
+          id?: string
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_tags_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
+          canonical_url: string | null
           created_at: string | null
           description: string | null
           icon: string | null
           id: string
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
           name: string
           slug: string
         }
         Insert: {
+          canonical_url?: string | null
           created_at?: string | null
           description?: string | null
           icon?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           name: string
           slug: string
         }
         Update: {
+          canonical_url?: string | null
           created_at?: string | null
           description?: string | null
           icon?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           name?: string
           slug?: string
         }
@@ -128,6 +185,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contact_submissions: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          read: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          read?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          read?: boolean | null
+        }
+        Relationships: []
       }
       coupons: {
         Row: {
@@ -211,6 +298,7 @@ export type Database = {
       deals: {
         Row: {
           affiliate_link: string | null
+          canonical_url: string | null
           category_id: string | null
           created_at: string | null
           description: string | null
@@ -221,8 +309,12 @@ export type Database = {
           heat_score: number | null
           id: string
           image_url: string | null
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
           original_price: number | null
           shop_id: string | null
+          slug: string | null
           status: string | null
           title: string
           updated_at: string | null
@@ -232,6 +324,7 @@ export type Database = {
         }
         Insert: {
           affiliate_link?: string | null
+          canonical_url?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -242,8 +335,12 @@ export type Database = {
           heat_score?: number | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           original_price?: number | null
           shop_id?: string | null
+          slug?: string | null
           status?: string | null
           title: string
           updated_at?: string | null
@@ -253,6 +350,7 @@ export type Database = {
         }
         Update: {
           affiliate_link?: string | null
+          canonical_url?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
@@ -263,8 +361,12 @@ export type Database = {
           heat_score?: number | null
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           original_price?: number | null
           shop_id?: string | null
+          slug?: string | null
           status?: string | null
           title?: string
           updated_at?: string | null
@@ -321,34 +423,142 @@ export type Database = {
       }
       shops: {
         Row: {
+          banner_url: string | null
+          canonical_url: string | null
           category: string | null
           created_at: string | null
           description: string | null
           id: string
           logo_url: string | null
+          long_description: string | null
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
           name: string
           slug: string
           website_url: string | null
         }
         Insert: {
+          banner_url?: string | null
+          canonical_url?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           logo_url?: string | null
+          long_description?: string | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           name: string
           slug: string
           website_url?: string | null
         }
         Update: {
+          banner_url?: string | null
+          canonical_url?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           logo_url?: string | null
+          long_description?: string | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           name?: string
           slug?: string
           website_url?: string | null
+        }
+        Relationships: []
+      }
+      static_pages: {
+        Row: {
+          canonical_url: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          is_visible: boolean | null
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
+          slug: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          slug: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          canonical_url?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
         }
         Relationships: []
       }
@@ -357,7 +567,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_unique_slug: {
+        Args: { title: string; table_name: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

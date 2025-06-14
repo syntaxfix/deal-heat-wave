@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +14,8 @@ import {
 import { Search, Plus, Flame, User, Settings, LogOut, Shield } from 'lucide-react';
 
 const Header = () => {
-  const { user, signOut } = useAuth();
+  const { user, loading } = useAuth();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -41,16 +41,32 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white shadow-sm border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          {/* Logo - clickable to go home */}
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
             <div className="p-2 bg-primary/10 rounded-lg">
               <Flame className="h-6 w-6 text-primary" />
             </div>
             <span className="text-xl font-bold text-gray-900">DealSpark</span>
-          </Link>
+          </div>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link to="/" className="text-gray-600 hover:text-gray-900 font-medium">
+              Deals
+            </Link>
+            <Link to="/shops" className="text-gray-600 hover:text-gray-900 font-medium">
+              Shops
+            </Link>
+            <Link to="/blog" className="text-gray-600 hover:text-gray-900 font-medium">
+              Blog
+            </Link>
+            <Link to="/contact" className="text-gray-600 hover:text-gray-900 font-medium">
+              Contact
+            </Link>
+          </nav>
 
           {/* Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md mx-8">
@@ -105,12 +121,6 @@ const Header = () => {
                     <Link to="/profile" className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       Profile Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin" className="cursor-pointer">
-                      <Shield className="mr-2 h-4 w-4" />
-                      Admin Panel
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
