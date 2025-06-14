@@ -41,12 +41,33 @@ const Category = () => {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
+  const [categories, setCategories] = useState([]);
+  const [shops, setShops] = useState([]);
 
   useEffect(() => {
     if (slug) {
       fetchCategoryData();
     }
   }, [slug, sortBy]);
+
+  useEffect(() => {
+    fetchFiltersData();
+  }, []);
+
+  const fetchFiltersData = async () => {
+    // Fetch categories for filter
+    const { data: categoriesData } = await supabase
+      .from('categories')
+      .select('id, name, slug');
+    
+    // Fetch shops for filter
+    const { data: shopsData } = await supabase
+      .from('shops')
+      .select('id, name, slug');
+
+    if (categoriesData) setCategories(categoriesData);
+    if (shopsData) setShops(shopsData);
+  };
 
   const fetchCategoryData = async () => {
     if (!slug) return;
@@ -181,7 +202,16 @@ const Category = () => {
             </p>
           </div>
 
-          <FilterBar onSortChange={setSortBy} currentSort={sortBy} />
+          <FilterBar 
+            categories={categories}
+            shops={shops}
+            selectedCategory={slug || ''}
+            selectedShop=""
+            sortBy={sortBy}
+            onCategoryChange={() => {}} // Disabled in category page
+            onShopChange={() => {}} // Could be enabled to filter by shop within category
+            onSortChange={setSortBy}
+          />
 
           {deals.length === 0 ? (
             <div className="text-center py-12">
