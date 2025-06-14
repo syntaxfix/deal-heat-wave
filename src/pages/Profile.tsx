@@ -3,14 +3,32 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { User, Settings } from 'lucide-react';
+import { User, Package, Filter, Edit2, Save, X } from 'lucide-react';
 import Header from '@/components/Header';
+import { useNavigate } from 'react-router-dom';
 
-interface Profile {
+interface Deal {
+  id: string;
+  title: string;
+  description: string;
+  original_price: number;
+  discounted_price: number;
+  status: string;
+  created_at: string;
+  image_url: string;
+  heat_score: number;
+  upvotes: number;
+  downvotes: number;
+}
+
+interface UserProfile {
   id: string;
   username: string;
   full_name: string;
@@ -19,22 +37,34 @@ interface Profile {
 }
 
 export default function Profile() {
-  const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
     username: '',
-    fullName: '',
-    avatarUrl: '',
+    full_name: '',
   });
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
+    if (!user) {
+      navigate('/login');
+      return;
     }
-  }, [user]);
+    
+    fetchUserProfile();
+    fetchUserDeals();
+  }, [user, navigate]);
 
-  const fetchProfile = async () => {
+  useEffect(() => {
+    filterDeals();
+  }, [deals, statusFilter]);
+
+  const fetchUserProfile = async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -46,148 +76,313 @@ export default function Profile() {
     if (error) {
       console.error('Error fetching profile:', error);
     } else {
-      setProfile(data);
-      setFormData({
+      setUserProfile(data);
+      setEditForm({
         username: data.username || '',
-        fullName: data.full_name || '',
-        avatarUrl: data.avatar_url || '',
+        full_name: data.full_name || '',
       });
     }
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchUserDeals = async () => {
     if (!user) return;
 
-    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('deals')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('Error fetching deals:', error);
+    } else {
+      setDeals(data || []);
+    }
+  };
+
+  const filterDeals = () => {
+    let filtered = deals;
+    
+    if (statusFilter !== 'all') {
+      filtered = deals.filter(deal => deal.status === statusFilter);
+    }
+    
+    setFilteredDeals(filtered);
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user || !userProfile) return;
+
+    setIsLoading(true);
+    
     const { error } = await supabase
       .from('profiles')
-      .upsert({
-        id: user.id,
-        username: formData.username,
-        full_name: formData.fullName,
-        avatar_url: formData.avatarUrl,
-      });
+      .update({
+        username: editForm.username,
+        full_name: editForm.full_name,
+      })
+      .eq('id', user.id);
 
     if (error) {
       toast.error('Failed to update profile: ' + error.message);
     } else {
       toast.success('Profile updated successfully!');
-      fetchProfile();
+      setIsEditing(false);
+      fetchUserProfile();
     }
-
+    
     setIsLoading(false);
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    toast.success('Signed out successfully');
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'rejected':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
+
+  const getStatusCount = (status: string) => {
+    return deals.filter(deal => deal.status === status).length;
   };
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p>Please sign in to view your profile.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Settings className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl">Profile Settings</CardTitle>
-                  <CardDescription>Manage your account information</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-4 mb-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={formData.avatarUrl} />
-                  <AvatarFallback>
-                    <User className="h-8 w-8" />
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="text-lg font-semibold">{formData.fullName || 'User'}</h3>
-                  <p className="text-sm text-gray-600">@{formData.username}</p>
-                  <p className="text-xs text-gray-500 capitalize">{profile?.role} Account</p>
-                </div>
-              </div>
+        <div className="mb-8">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <User className="h-6 w-6 text-primary" />
+            </div>
+            <h1 className="text-3xl font-bold">My Profile</h1>
+          </div>
+          <p className="text-gray-600">Manage your account and view your deal submissions</p>
+        </div>
 
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Username</label>
-                  <Input
-                    value={formData.username}
-                    onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                    placeholder="Enter username"
-                  />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Profile Card */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Profile Information
+                  {!isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="username">Username</Label>
+                      <Input
+                        id="username"
+                        value={editForm.username}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
+                        placeholder="Enter username"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        value={editForm.full_name}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                        placeholder="Enter full name"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button onClick={handleUpdateProfile} disabled={isLoading} size="sm">
+                        <Save className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditForm({
+                            username: userProfile?.username || '',
+                            full_name: userProfile?.full_name || '',
+                          });
+                        }}
+                        size="sm"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Username</p>
+                      <p className="text-gray-900">@{userProfile?.username || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Full Name</p>
+                      <p className="text-gray-900">{userProfile?.full_name || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Email</p>
+                      <p className="text-gray-900">{user.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Role</p>
+                      <Badge variant="outline">{userProfile?.role}</Badge>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Stats Card */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Deal Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Total Deals</span>
+                    <span className="font-medium">{deals.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Approved</span>
+                    <span className="font-medium text-green-600">{getStatusCount('approved')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Pending</span>
+                    <span className="font-medium text-yellow-600">{getStatusCount('pending')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Rejected</span>
+                    <span className="font-medium text-red-600">{getStatusCount('rejected')}</span>
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Full Name</label>
-                  <Input
-                    value={formData.fullName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                    placeholder="Enter full name"
-                  />
+          {/* Deals Section */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Package className="h-5 w-5" />
+                      <span>My Deals</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Manage and track your deal submissions
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All ({deals.length})</SelectItem>
+                        <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
+                        <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
+                        <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Avatar URL</label>
-                  <Input
-                    value={formData.avatarUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, avatarUrl: e.target.value }))}
-                    placeholder="https://example.com/avatar.jpg"
-                    type="url"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Email</label>
-                  <Input
-                    value={user.email}
-                    disabled
-                    className="bg-gray-50"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-                </div>
-
-                <Button type="submit" disabled={isLoading} className="w-full">
-                  {isLoading ? 'Updating...' : 'Update Profile'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Account Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={handleSignOut} variant="destructive" className="w-full">
-                Sign Out
-              </Button>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                {filteredDeals.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {statusFilter === 'all' ? 'No deals submitted yet' : `No ${statusFilter} deals`}
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      {statusFilter === 'all' 
+                        ? 'Start sharing amazing deals with the community!'
+                        : `You don't have any ${statusFilter} deals at the moment.`
+                      }
+                    </p>
+                    {statusFilter === 'all' && (
+                      <Button onClick={() => navigate('/post-deal')}>
+                        Submit Your First Deal
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredDeals.map((deal) => (
+                      <Card key={deal.id} className="border">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start space-x-4">
+                            {deal.image_url && (
+                              <img
+                                src={deal.image_url}
+                                alt={deal.title}
+                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-medium text-gray-900 truncate">
+                                    {deal.title}
+                                  </h3>
+                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                    {deal.description}
+                                  </p>
+                                </div>
+                                <Badge variant={getStatusBadgeVariant(deal.status)} className="ml-2">
+                                  {deal.status}
+                                </Badge>
+                              </div>
+                              
+                              <div className="flex items-center justify-between mt-3">
+                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                  <span>
+                                    ${deal.original_price} → ${deal.discounted_price}
+                                  </span>
+                                  <span>
+                                    {deal.upvotes} upvotes
+                                  </span>
+                                  <span>
+                                    Heat: {deal.heat_score}
+                                  </span>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  {new Date(deal.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

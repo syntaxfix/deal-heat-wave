@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +15,7 @@ import DealDetail from "./pages/DealDetail";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import RootLogin from "./pages/RootLogin";
 import RootDashboard from "./pages/RootDashboard";
 import Profile from "./pages/Profile";
@@ -42,6 +44,7 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/root/login" element={<RootLogin />} />
                 <Route path="/root/dashboard" element={<RootDashboard />} />
                 <Route path="/deal/:slug" element={<DealDetail />} />
@@ -59,6 +62,7 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/post-deal" element={<PostDeal />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

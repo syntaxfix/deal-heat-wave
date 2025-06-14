@@ -62,13 +62,13 @@ const RootLogin = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success('Password reset email sent!');
+        toast.success('Password reset email sent! Check your inbox.');
         setShowForgotPassword(false);
       }
     } catch (error) {
@@ -122,7 +122,7 @@ const RootLogin = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       placeholder="Enter your password"
-                      className="bg-gray-700 border-gray-600 text-white"
+                      className="bg-gray-700 border-gray-600 text-white pr-10"
                     />
                     <Button
                       type="button"
