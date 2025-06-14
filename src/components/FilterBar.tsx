@@ -2,78 +2,108 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, Clock, Percent, Grid3X3 } from 'lucide-react';
+import { Filter, SortAsc } from 'lucide-react';
 
-interface FilterBarProps {
-  onSortChange?: (sort: string) => void;
-  currentSort?: string;
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
 }
 
-const FilterBar = ({ onSortChange, currentSort = 'hot' }: FilterBarProps) => {
-  const sortOptions = [
-    { value: 'hot', label: 'Hot Deals', icon: TrendingUp },
-    { value: 'newest', label: 'Newest', icon: Clock },
-    { value: 'discount', label: 'Best Discount', icon: Percent },
-    { value: 'votes', label: 'Most Voted', icon: TrendingUp }
-  ];
+interface Shop {
+  id: string;
+  name: string;
+  slug: string;
+}
 
-  const handleSortChange = (sort: string) => {
-    if (onSortChange) {
-      onSortChange(sort);
-    }
+interface FilterBarProps {
+  categories: Category[];
+  shops: Shop[];
+  selectedCategory: string;
+  selectedShop: string;
+  sortBy: string;
+  onCategoryChange: (value: string) => void;
+  onShopChange: (value: string) => void;
+  onSortChange: (value: string) => void;
+}
+
+const FilterBar = ({
+  categories,
+  shops,
+  selectedCategory,
+  selectedShop,
+  sortBy,
+  onCategoryChange,
+  onShopChange,
+  onSortChange
+}: FilterBarProps) => {
+  const clearFilters = () => {
+    onCategoryChange('');
+    onShopChange('');
+    onSortChange('hot');
   };
 
   return (
     <Card className="mb-6">
-      <CardContent className="py-4">
-        <div className="flex items-center justify-between">
+      <CardContent className="pt-4">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
           <div className="flex items-center space-x-2">
-            <Grid3X3 className="h-4 w-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Sort by:</span>
+            <Filter className="h-4 w-4 text-gray-500" />
+            <span className="text-sm text-gray-700 font-medium">Filter & Sort:</span>
           </div>
           
-          <div className="flex items-center space-x-2">
-            {/* Desktop - Button Group */}
-            <div className="hidden md:flex space-x-1">
-              {sortOptions.map((option) => {
-                const Icon = option.icon;
-                return (
-                  <Button
-                    key={option.value}
-                    variant={currentSort === option.value ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleSortChange(option.value)}
-                    className="flex items-center space-x-1"
-                  >
-                    <Icon className="h-3 w-3" />
-                    <span>{option.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
+          <div className="flex flex-col sm:flex-row gap-3 flex-1">
+            {/* Category Filter */}
+            <Select value={selectedCategory} onValueChange={onCategoryChange}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.slug}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            {/* Mobile - Select Dropdown */}
-            <div className="md:hidden">
-              <Select value={currentSort} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center space-x-2">
-                          <Icon className="h-3 w-3" />
-                          <span>{option.label}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Shop Filter */}
+            <Select value={selectedShop} onValueChange={onShopChange}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Shops" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Shops</SelectItem>
+                {shops.map((shop) => (
+                  <SelectItem key={shop.id} value={shop.slug}>
+                    {shop.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Sort By */}
+            <Select value={sortBy} onValueChange={onSortChange}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hot">🔥 Hot</SelectItem>
+                <SelectItem value="newest">🆕 Newest</SelectItem>
+                <SelectItem value="discount">💰 Best Discount</SelectItem>
+                <SelectItem value="price_low">💷 Price: Low to High</SelectItem>
+                <SelectItem value="price_high">💷 Price: High to Low</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Clear Filters */}
+          {(selectedCategory || selectedShop || sortBy !== 'hot') && (
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              Clear All
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

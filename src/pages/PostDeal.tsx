@@ -115,10 +115,10 @@ const PostDeal = () => {
       const discountPercentage = calculateDiscount();
       const baseSlug = generateSlug(formData.title);
       
-      // Generate unique slug
+      // Generate unique slug using the correct function name
       const { data: uniqueSlug } = await supabase
-        .rpc('ensure_unique_slug', {
-          base_slug: baseSlug,
+        .rpc('generate_unique_slug', {
+          title: formData.title,
           table_name: 'deals'
         });
 
@@ -144,7 +144,7 @@ const PostDeal = () => {
 
       const { error } = await supabase
         .from('deals')
-        .insert([dealData]);
+        .insert(dealData);
 
       if (error) {
         console.error('Error submitting deal:', error);

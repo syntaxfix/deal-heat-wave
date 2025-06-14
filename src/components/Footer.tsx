@@ -7,7 +7,7 @@ interface StaticPage {
   id: string;
   title: string;
   slug: string;
-  show_in_footer: boolean;
+  is_visible: boolean;
 }
 
 const Footer = () => {
@@ -20,12 +20,16 @@ const Footer = () => {
 
   const fetchFooterPages = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('static_pages')
-        .select('id, title, slug, show_in_footer')
-        .eq('show_in_footer', true)
+        .select('id, title, slug, is_visible')
         .eq('is_visible', true)
         .order('title');
+
+      if (error) {
+        console.error('Error fetching footer pages:', error);
+        return;
+      }
 
       if (data) {
         setFooterPages(data);

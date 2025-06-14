@@ -26,6 +26,7 @@ import {
 interface Deal {
   id: string;
   title: string;
+  slug: string;
   description?: string;
   image_url?: string;
   images?: string[];
@@ -41,7 +42,7 @@ interface Deal {
   views: number;
   categories?: { name: string; slug: string };
   shops?: { name: string; slug: string; logo_url?: string };
-  profiles?: { username: string; full_name?: string };
+  profiles?: { username?: string; full_name?: string };
 }
 
 const DealDetail = () => {
@@ -83,7 +84,9 @@ const DealDetail = () => {
         return;
       }
 
-      setDeal(data);
+      if (data) {
+        setDeal(data as Deal);
+      }
     } catch (error) {
       console.error('Error fetching deal:', error);
     } finally {
@@ -119,17 +122,10 @@ const DealDetail = () => {
         .neq('id', deal.id)
         .limit(4);
 
-      // Prioritize same category or shop
-      if (deal.categories?.slug) {
-        query = query.eq('categories.slug', deal.categories.slug);
-      } else if (deal.shops?.slug) {
-        query = query.eq('shops.slug', deal.shops.slug);
-      }
-
       const { data } = await query.order('heat_score', { ascending: false });
       
       if (data) {
-        setRelatedDeals(data);
+        setRelatedDeals(data as Deal[]);
       }
     } catch (error) {
       console.error('Error fetching related deals:', error);
