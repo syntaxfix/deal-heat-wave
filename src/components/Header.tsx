@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,11 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Plus, Flame, User, Settings, LogOut, Shield } from 'lucide-react';
+import { Search, Plus, Flame, User, Settings, LogOut } from 'lucide-react';
 
 const Header = () => {
-  const { user, loading } = useAuth();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 

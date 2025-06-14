@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,20 +8,27 @@ import FilterBar from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { Package, Flame, Store, BookOpen } from 'lucide-react';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 interface Deal {
   id: string;
   title: string;
-  slug: string;
-  summary: string;
-  image_url: string;
-  original_price: number;
-  discounted_price: number;
+  description?: string;
+  summary?: string;
+  image_url?: string;
+  original_price?: number;
+  discounted_price?: number;
+  discount_percentage?: number;
+  slug?: string;
+  created_at: string;
+  upvotes?: number;
+  downvotes?: number;
+  heat_score?: number;
+  affiliate_link?: string;
+  categories?: { name: string; slug: string };
+  shops?: { name: string; slug: string; logo_url?: string };
 }
 
 const Index = () => {
@@ -31,6 +39,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [currentSort, setCurrentSort] = useState('hot');
 
   useEffect(() => {
     fetchInitialData();
@@ -93,9 +102,13 @@ const Index = () => {
       setHasMore(true);
     }
 
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
       .from('deals')
-      .select('*', { count: 'exact' })
+      .select(`
+        *,
+        categories(name, slug),
+        shops(name, slug, logo_url)
+      `)
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
       .range((page - 1) * 9, page * 9 - 1);
@@ -103,10 +116,15 @@ const Index = () => {
     if (error) {
       console.error('Error fetching deals:', error);
     } else {
+      const mappedDeals = (data || []).map(deal => ({
+        ...deal,
+        summary: deal.description || deal.summary || ''
+      }));
+
       if (initialLoad) {
-        setDeals(data || []);
+        setDeals(mappedDeals);
       } else {
-        setDeals((prevDeals) => [...prevDeals, ...(data || [])]);
+        setDeals((prevDeals) => [...prevDeals, ...mappedDeals]);
       }
 
       if (data && data.length < 9) {
@@ -122,12 +140,18 @@ const Index = () => {
     await fetchDeals();
   };
 
+  const handleSortChange = (sort: string) => {
+    setCurrentSort(sort);
+    // Implement sorting logic here
+    console.log('Sorting by:', sort);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg: grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <Card key={i}>
                 <CardContent className="pt-6">
@@ -236,7 +260,7 @@ const Index = () => {
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Hot Deals</h2>
             </div>
-            <FilterBar />
+            <FilterBar onSortChange={handleSortChange} currentSort={currentSort} />
           </div>
 
           {deals.length === 0 ? (

@@ -5,17 +5,23 @@ import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, Clock, Percent, Grid3X3 } from 'lucide-react';
 
 interface FilterBarProps {
-  onSortChange: (sort: string) => void;
-  currentSort: string;
+  onSortChange?: (sort: string) => void;
+  currentSort?: string;
 }
 
-const FilterBar = ({ onSortChange, currentSort }: FilterBarProps) => {
+const FilterBar = ({ onSortChange, currentSort = 'hot' }: FilterBarProps) => {
   const sortOptions = [
     { value: 'hot', label: 'Hot Deals', icon: TrendingUp },
     { value: 'newest', label: 'Newest', icon: Clock },
     { value: 'discount', label: 'Best Discount', icon: Percent },
     { value: 'votes', label: 'Most Voted', icon: TrendingUp }
   ];
+
+  const handleSortChange = (sort: string) => {
+    if (onSortChange) {
+      onSortChange(sort);
+    }
+  };
 
   return (
     <Card className="mb-6">
@@ -36,7 +42,7 @@ const FilterBar = ({ onSortChange, currentSort }: FilterBarProps) => {
                     key={option.value}
                     variant={currentSort === option.value ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => onSortChange(option.value)}
+                    onClick={() => handleSortChange(option.value)}
                     className="flex items-center space-x-1"
                   >
                     <Icon className="h-3 w-3" />
@@ -48,7 +54,7 @@ const FilterBar = ({ onSortChange, currentSort }: FilterBarProps) => {
 
             {/* Mobile - Select Dropdown */}
             <div className="md:hidden">
-              <Select value={currentSort} onValueChange={onSortChange}>
+              <Select value={currentSort} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>

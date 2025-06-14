@@ -7,61 +7,61 @@ import { Clock, ExternalLink, Store } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
 
-interface DealCardProps {
+interface Deal {
   id: string;
   title: string;
-  description: string;
-  image?: string;
-  originalPrice: number;
-  discountedPrice: number;
-  discountPercentage: number;
-  category: string;
-  categorySlug: string;
-  shop: string;
-  shopSlug: string;
-  shopLogo?: string;
-  heatScore: number;
-  upvotes: number;
-  downvotes: number;
-  postedTime: string;
-  affiliateLink?: string;
+  description?: string;
+  summary?: string;
+  image_url?: string;
+  original_price?: number;
+  discounted_price?: number;
+  discount_percentage?: number;
+  slug?: string;
+  created_at: string;
+  upvotes?: number;
+  downvotes?: number;
+  heat_score?: number;
+  affiliate_link?: string;
+  categories?: { name: string; slug: string };
+  shops?: { name: string; slug: string; logo_url?: string };
 }
 
-const DealCard = ({
-  id,
-  title,
-  description,
-  image,
-  originalPrice,
-  discountedPrice,
-  discountPercentage,
-  category,
-  categorySlug,
-  shop,
-  shopSlug,
-  shopLogo,
-  heatScore,
-  upvotes,
-  downvotes,
-  postedTime,
-  affiliateLink
-}: DealCardProps) => {
-  const getHeatColor = (score: number) => {
-    if (score >= 90) return 'bg-red-500';
-    if (score >= 50) return 'bg-orange-500';
-    if (score >= 0) return 'bg-yellow-500';
-    return 'bg-blue-500';
-  };
+interface DealCardProps {
+  deal: Deal;
+}
+
+const DealCard = ({ deal }: DealCardProps) => {
+  const {
+    id,
+    title,
+    description,
+    summary,
+    image_url,
+    original_price = 0,
+    discounted_price = 0,
+    discount_percentage = 0,
+    slug,
+    created_at,
+    upvotes = 0,
+    downvotes = 0,
+    heat_score = 0,
+    affiliate_link,
+    categories,
+    shops
+  } = deal;
+
+  const displayDescription = description || summary || '';
+  const dealSlug = slug || id;
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-200 border-0 shadow-md">
       <CardContent className="p-0">
         {/* Image Section */}
-        <Link to={`/deal/${id}`}>
+        <Link to={`/deal/${dealSlug}`}>
           <div className="relative aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
-            {image ? (
+            {image_url ? (
               <img
-                src={image}
+                src={image_url}
                 alt={title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
               />
@@ -72,62 +72,70 @@ const DealCard = ({
             )}
             
             {/* Discount Badge */}
-            <div className="absolute top-3 right-3">
-              <Badge className="bg-green-600 hover:bg-green-700 text-white font-bold">
-                {discountPercentage}% OFF
-              </Badge>
-            </div>
+            {discount_percentage > 0 && (
+              <div className="absolute top-3 right-3">
+                <Badge className="bg-green-600 hover:bg-green-700 text-white font-bold">
+                  {discount_percentage}% OFF
+                </Badge>
+              </div>
+            )}
           </div>
         </Link>
 
         <div className="p-4 space-y-3">
           {/* Category and Shop */}
           <div className="flex items-center justify-between">
-            <Link 
-              to={`/category/${categorySlug}`}
-              className="text-xs text-primary hover:underline font-medium"
-            >
-              {category}
-            </Link>
-            <div className="flex items-center space-x-2">
-              <Avatar className="h-5 w-5">
-                <AvatarImage src={shopLogo} />
-                <AvatarFallback className="text-xs">
-                  {shop.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+            {categories && (
               <Link 
-                to={`/shop/${shopSlug}`}
-                className="text-xs text-gray-600 hover:text-primary"
+                to={`/category/${categories.slug}`}
+                className="text-xs text-primary hover:underline font-medium"
               >
-                {shop}
+                {categories.name}
               </Link>
-            </div>
+            )}
+            {shops && (
+              <div className="flex items-center space-x-2">
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={shops.logo_url} />
+                  <AvatarFallback className="text-xs">
+                    {shops.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <Link 
+                  to={`/shop/${shops.slug}`}
+                  className="text-xs text-gray-600 hover:text-primary"
+                >
+                  {shops.name}
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Title */}
-          <Link to={`/deal/${id}`}>
+          <Link to={`/deal/${dealSlug}`}>
             <h3 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-primary transition-colors">
               {title}
             </h3>
           </Link>
 
           {/* Description */}
-          {description && (
+          {displayDescription && (
             <p className="text-sm text-gray-600 line-clamp-2">
-              {description}
+              {displayDescription}
             </p>
           )}
 
           {/* Price Section */}
-          <div className="flex items-center space-x-2">
-            <span className="text-lg font-bold text-green-600">
-              ${discountedPrice.toFixed(2)}
-            </span>
-            <span className="text-sm text-gray-500 line-through">
-              ${originalPrice.toFixed(2)}
-            </span>
-          </div>
+          {original_price > 0 && discounted_price > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-bold text-green-600">
+                ${discounted_price.toFixed(2)}
+              </span>
+              <span className="text-sm text-gray-500 line-through">
+                ${original_price.toFixed(2)}
+              </span>
+            </div>
+          )}
 
           {/* Voting and Time */}
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
@@ -135,19 +143,19 @@ const DealCard = ({
               dealId={id}
               initialUpvotes={upvotes}
               initialDownvotes={downvotes}
-              initialHeatScore={heatScore}
+              initialHeatScore={heat_score}
             />
             
             <div className="flex items-center space-x-2 text-xs text-gray-500">
               <Clock className="h-3 w-3" />
-              <span>{formatDistanceToNow(new Date(postedTime), { addSuffix: true })}</span>
+              <span>{formatDistanceToNow(new Date(created_at), { addSuffix: true })}</span>
             </div>
           </div>
 
           {/* Action Button */}
-          {affiliateLink && (
+          {affiliate_link && (
             <a
-              href={affiliateLink}
+              href={affiliate_link}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center space-x-2 transition-colors"
