@@ -38,10 +38,24 @@ const FilterBar = ({
   onSortChange
 }: FilterBarProps) => {
   const clearFilters = () => {
-    onCategoryChange('');
-    onShopChange('');
+    onCategoryChange('all');
+    onShopChange('all');
     onSortChange('hot');
   };
+
+  const handleCategoryChange = (value: string) => {
+    // Convert "all" back to empty string for the parent component
+    onCategoryChange(value === 'all' ? '' : value);
+  };
+
+  const handleShopChange = (value: string) => {
+    // Convert "all" back to empty string for the parent component
+    onShopChange(value === 'all' ? '' : value);
+  };
+
+  // Convert empty strings to "all" for the Select component
+  const categoryValue = selectedCategory === '' ? 'all' : selectedCategory;
+  const shopValue = selectedShop === '' ? 'all' : selectedShop;
 
   return (
     <Card className="mb-6">
@@ -54,12 +68,12 @@ const FilterBar = ({
           
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
             {/* Category Filter */}
-            <Select value={selectedCategory} onValueChange={onCategoryChange}>
+            <Select value={categoryValue} onValueChange={handleCategoryChange}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.slug}>
                     {category.name}
@@ -69,12 +83,12 @@ const FilterBar = ({
             </Select>
 
             {/* Shop Filter */}
-            <Select value={selectedShop} onValueChange={onShopChange}>
+            <Select value={shopValue} onValueChange={handleShopChange}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="All Shops" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Shops</SelectItem>
+                <SelectItem value="all">All Shops</SelectItem>
                 {shops.map((shop) => (
                   <SelectItem key={shop.id} value={shop.slug}>
                     {shop.name}
