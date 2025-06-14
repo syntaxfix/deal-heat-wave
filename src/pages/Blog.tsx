@@ -34,21 +34,64 @@ const Blog = () => {
   }, []);
 
   const fetchBlogPosts = async () => {
-    const { data, error } = await supabase
+    // First get blog posts
+    const { data: postsData, error: postsError } = await supabase
       .from('blog_posts')
-      .select(`
-        *,
-        profiles!blog_posts_author_id_fkey (username, full_name)
-      `)
+      .select('*')
       .eq('status', 'published')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching blog posts:', error);
-    } else {
-      setPosts(data || []);
+    if (postsError) {
+      console.error('Error fetching blog posts:', postsError);
+      setLoading(false);
+      return;
     }
-    
+
+    if (!postsData || postsData.length === 0) {
+      setPosts([]);
+      setLoading(false);
+      return;
+    }
+
+    // Get unique author IDs
+    const authorIds = [...new Set(postsData.map(post => post.author_id).filter(Boolean))];
+
+    if (authorIds.length === 0) {
+      // No authors to fetch, set posts without profiles
+      const postsWithoutProfiles = postsData.map(post => ({
+        ...post,
+        profiles: null
+      }));
+      setPosts(postsWithoutProfiles);
+      setLoading(false);
+      return;
+    }
+
+    // Get profiles for these authors
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name')
+      .in('id', authorIds);
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+    }
+
+    // Create a map of author_id to profile
+    const profilesMap = new Map();
+    if (profilesData) {
+      profilesData.forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
+    }
+
+    // Combine posts with profiles
+    const postsWithProfiles = postsData.map(post => ({
+      ...post,
+      profiles: post.author_id ? profilesMap.get(post.author_id) || null : null
+    }));
+
+    setPosts(postsWithProfiles);
     setLoading(false);
   };
 

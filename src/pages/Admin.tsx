@@ -62,20 +62,51 @@ export default function Admin() {
   };
 
   const fetchPendingDeals = async () => {
-    const { data, error } = await supabase
+    // First get deals
+    const { data: dealsData, error: dealsError } = await supabase
       .from('deals')
-      .select(`
-        *,
-        profiles!deals_user_id_fkey (username, full_name)
-      `)
+      .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching pending deals:', error);
-    } else {
-      setPendingDeals(data || []);
+    if (dealsError) {
+      console.error('Error fetching pending deals:', dealsError);
+      return;
     }
+
+    if (!dealsData || dealsData.length === 0) {
+      setPendingDeals([]);
+      return;
+    }
+
+    // Get unique user IDs
+    const userIds = [...new Set(dealsData.map(deal => deal.user_id).filter(Boolean))];
+
+    // Get profiles for these users
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+    }
+
+    // Create a map of user_id to profile
+    const profilesMap = new Map();
+    if (profilesData) {
+      profilesData.forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
+    }
+
+    // Combine deals with profiles
+    const dealsWithProfiles = dealsData.map(deal => ({
+      ...deal,
+      profiles: deal.user_id ? profilesMap.get(deal.user_id) || null : null
+    }));
+
+    setPendingDeals(dealsWithProfiles);
   };
 
   const fetchUsers = async () => {

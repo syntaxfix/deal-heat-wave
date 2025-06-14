@@ -28,6 +28,9 @@ interface Deal {
   affiliate_link: string;
   created_at: string;
   expires_at: string;
+  category_id: string;
+  shop_id: string;
+  user_id: string;
   categories: { name: string; slug: string } | null;
   shops: { name: string; slug: string; logo_url: string } | null;
   profiles: { username: string; full_name: string; avatar_url: string } | null;
@@ -48,27 +51,80 @@ const DealDetail = () => {
   const fetchDeal = async () => {
     if (!id) return;
 
-    const { data, error } = await supabase
+    // First get the deal
+    const { data: dealData, error: dealError } = await supabase
       .from('deals')
-      .select(`
-        *,
-        categories!deals_category_id_fkey (name, slug),
-        shops!deals_shop_id_fkey (name, slug, logo_url),
-        profiles!deals_user_id_fkey (username, full_name, avatar_url)
-      `)
+      .select('*')
       .eq('id', id)
       .eq('status', 'approved')
       .single();
 
-    if (error) {
-      console.error('Error fetching deal:', error);
+    if (dealError) {
+      console.error('Error fetching deal:', dealError);
+      setLoading(false);
+      return;
+    }
+
+    if (!dealData) {
+      setDeal(null);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch related data
+    const promises = [];
+
+    // Get category if category_id exists
+    if (dealData.category_id) {
+      promises.push(
+        supabase
+          .from('categories')
+          .select('name, slug')
+          .eq('id', dealData.category_id)
+          .single()
+      );
     } else {
-      setDeal(data);
-      
-      // Set document title
-      if (data) {
-        document.title = `${data.title} - DealSpark`;
-      }
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    // Get shop if shop_id exists
+    if (dealData.shop_id) {
+      promises.push(
+        supabase
+          .from('shops')
+          .select('name, slug, logo_url')
+          .eq('id', dealData.shop_id)
+          .single()
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    // Get profile if user_id exists
+    if (dealData.user_id) {
+      promises.push(
+        supabase
+          .from('profiles')
+          .select('username, full_name, avatar_url')
+          .eq('id', dealData.user_id)
+          .single()
+      );
+    } else {
+      promises.push(Promise.resolve({ data: null, error: null }));
+    }
+
+    const [categoryResult, shopResult, profileResult] = await Promise.all(promises);
+
+    setDeal({
+      ...dealData,
+      categories: categoryResult.data,
+      shops: shopResult.data,
+      profiles: profileResult.data
+    });
+
+    // Set document title
+    if (dealData) {
+      document.title = `${dealData.title} - DealSpark`;
     }
     
     setLoading(false);
@@ -77,8 +133,19 @@ const DealDetail = () => {
   const incrementViews = async () => {
     if (!id) return;
 
-    // Use RPC function to increment views safely
-    await supabase.rpc('increment_deal_views', { deal_id: id });
+    // Simple increment without RPC since it might not exist
+    const { data: currentDeal } = await supabase
+      .from('deals')
+      .select('views')
+      .eq('id', id)
+      .single();
+
+    if (currentDeal) {
+      await supabase
+        .from('deals')
+        .update({ views: (currentDeal.views || 0) + 1 })
+        .eq('id', id);
+    }
   };
 
   if (loading) {
@@ -165,27 +232,31 @@ const DealDetail = () => {
                 <div className="space-y-6">
                   {/* Category and Shop */}
                   <div className="flex items-center justify-between">
-                    <Link 
-                      to={`/category/${deal.categories?.slug}`}
-                      className="flex items-center space-x-1 text-sm text-primary hover:underline"
-                    >
-                      <Tag className="h-3 w-3" />
-                      <span>{deal.categories?.name}</span>
-                    </Link>
-                    <div className="flex items-center space-x-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={deal.shops?.logo_url} />
-                        <AvatarFallback className="text-xs">
-                          {deal.shops?.name?.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
+                    {deal.categories && (
                       <Link 
-                        to={`/shop/${deal.shops?.slug}`}
-                        className="text-sm text-gray-600 hover:text-primary"
+                        to={`/category/${deal.categories.slug}`}
+                        className="flex items-center space-x-1 text-sm text-primary hover:underline"
                       >
-                        {deal.shops?.name}
+                        <Tag className="h-3 w-3" />
+                        <span>{deal.categories.name}</span>
                       </Link>
-                    </div>
+                    )}
+                    {deal.shops && (
+                      <div className="flex items-center space-x-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={deal.shops.logo_url} />
+                          <AvatarFallback className="text-xs">
+                            {deal.shops.name?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Link 
+                          to={`/shop/${deal.shops.slug}`}
+                          className="text-sm text-gray-600 hover:text-primary"
+                        >
+                          {deal.shops.name}
+                        </Link>
+                      </div>
+                    )}
                   </div>
 
                   {/* Title */}
@@ -257,16 +328,18 @@ const DealDetail = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
-                      <span>Posted by:</span>
-                      <Avatar className="h-4 w-4">
-                        <AvatarImage src={deal.profiles?.avatar_url} />
-                        <AvatarFallback className="text-xs">
-                          {deal.profiles?.full_name?.charAt(0) || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{deal.profiles?.full_name || deal.profiles?.username || 'Anonymous'}</span>
-                    </div>
+                    {deal.profiles && (
+                      <div className="flex items-center space-x-2">
+                        <span>Posted by:</span>
+                        <Avatar className="h-4 w-4">
+                          <AvatarImage src={deal.profiles.avatar_url} />
+                          <AvatarFallback className="text-xs">
+                            {deal.profiles.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{deal.profiles.full_name || deal.profiles.username || 'Anonymous'}</span>
+                      </div>
+                    )}
 
                     {deal.expires_at && (
                       <div className="text-red-600">

@@ -22,6 +22,7 @@ interface BlogPost {
   tags: string[];
   read_time: number;
   created_at: string;
+  author_id: string;
   profiles: {
     username: string;
     full_name: string;
@@ -43,28 +44,55 @@ const BlogPost = () => {
   const fetchBlogPost = async () => {
     if (!slug) return;
 
-    const { data, error } = await supabase
+    // First get the blog post
+    const { data: postData, error: postError } = await supabase
       .from('blog_posts')
-      .select(`
-        *,
-        profiles!blog_posts_author_id_fkey (username, full_name, avatar_url)
-      `)
+      .select('*')
       .eq('slug', slug)
       .eq('status', 'published')
       .single();
 
-    if (error) {
-      console.error('Error fetching blog post:', error);
+    if (postError) {
+      console.error('Error fetching blog post:', postError);
+      setLoading(false);
+      return;
+    }
+
+    if (!postData) {
+      setPost(null);
+      setLoading(false);
+      return;
+    }
+
+    // Get profile for the author if author_id exists
+    if (postData.author_id) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('username, full_name, avatar_url')
+        .eq('id', postData.author_id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      }
+
+      setPost({
+        ...postData,
+        profiles: profileData || null
+      });
     } else {
-      setPost(data);
-      
-      // Set document title and meta description
-      if (data) {
-        document.title = `${data.title} - DealSpark Blog`;
-        const metaDescription = document.querySelector('meta[name="description"]');
-        if (metaDescription) {
-          metaDescription.setAttribute('content', data.summary || '');
-        }
+      setPost({
+        ...postData,
+        profiles: null
+      });
+    }
+
+    // Set document title and meta description
+    if (postData) {
+      document.title = `${postData.title} - DealSpark Blog`;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute('content', postData.summary || '');
       }
     }
     

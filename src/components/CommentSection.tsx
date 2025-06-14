@@ -41,22 +41,53 @@ export default function CommentSection({ dealId }: CommentSectionProps) {
   }, [dealId]);
 
   const fetchComments = async () => {
-    const { data, error } = await supabase
+    // First get comments
+    const { data: commentsData, error: commentsError } = await supabase
       .from('comments')
-      .select(`
-        *,
-        profiles!comments_user_id_fkey (username, full_name, avatar_url)
-      `)
+      .select('*')
       .eq('deal_id', dealId)
       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching comments:', error);
-    } else {
-      // Organize comments with replies
-      const organizedComments = organizeComments(data || []);
-      setComments(organizedComments);
+    if (commentsError) {
+      console.error('Error fetching comments:', commentsError);
+      return;
     }
+
+    if (!commentsData || commentsData.length === 0) {
+      setComments([]);
+      return;
+    }
+
+    // Get unique user IDs
+    const userIds = [...new Set(commentsData.map(comment => comment.user_id).filter(Boolean))];
+
+    // Get profiles for these users
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+    }
+
+    // Create a map of user_id to profile
+    const profilesMap = new Map();
+    if (profilesData) {
+      profilesData.forEach(profile => {
+        profilesMap.set(profile.id, profile);
+      });
+    }
+
+    // Combine comments with profiles
+    const commentsWithProfiles = commentsData.map(comment => ({
+      ...comment,
+      profiles: comment.user_id ? profilesMap.get(comment.user_id) || null : null
+    }));
+
+    // Organize comments with replies
+    const organizedComments = organizeComments(commentsWithProfiles);
+    setComments(organizedComments);
   };
 
   const organizeComments = (comments: Comment[]): Comment[] => {
