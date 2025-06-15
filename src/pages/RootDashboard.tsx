@@ -11,6 +11,10 @@ import { TagsAdmin } from "@/components/admin/TagsAdmin";
 import Header from "@/components/Header";
 import { DealsAdmin } from "@/components/admin/DealsAdmin";
 import { UsersAdmin } from "@/components/admin/UsersAdmin";
+import { DashboardOverview } from "@/components/admin/DashboardOverview";
+import { SettingsAdmin } from "@/components/admin/SettingsAdmin";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react";
 
 const RootDashboard = () => {
   return (
@@ -18,23 +22,21 @@ const RootDashboard = () => {
       <Header />
       <div className="container mx-auto py-10">
         <h1 className="text-3xl font-bold mb-6">Root Dashboard</h1>
-        <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="shops">Shops</TabsTrigger>
-            <TabsTrigger value="blog">Blog Posts</TabsTrigger>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-9">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="deals">Deals</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="static-pages">Static Pages</TabsTrigger>
             <TabsTrigger value="tags">Tags</TabsTrigger>
+            <TabsTrigger value="shops">Shops</TabsTrigger>
+            <TabsTrigger value="blog">Blog Posts</TabsTrigger>
+            <TabsTrigger value="static-pages">Static Pages</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="shops">
-            <div className="p-4 text-center text-muted-foreground">Shop management coming soon.</div>
-          </TabsContent>
-
-          <TabsContent value="blog">
-             <div className="p-4 text-center text-muted-foreground">Blog post management coming soon.</div>
+          <TabsContent value="overview">
+            <DashboardOverview />
           </TabsContent>
 
           <TabsContent value="deals">
@@ -45,16 +47,42 @@ const RootDashboard = () => {
             <CategoriesAdmin />
           </TabsContent>
 
-          <TabsContent value="static-pages">
-            <StaticPagesAdmin />
-          </TabsContent>
-
           <TabsContent value="tags">
             <TagsAdmin />
+          </TabsContent>
+
+          <TabsContent value="shops">
+            <Alert variant="destructive" className="m-4">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Under Construction</AlertTitle>
+              <AlertDescription>
+                Full management for Shops is not yet available as some required files are not editable. You can view existing shops, but create and edit functionality is disabled.
+              </AlertDescription>
+            </Alert>
+            <div className="p-4 text-center text-muted-foreground">Shop management coming soon.</div>
+          </TabsContent>
+
+          <TabsContent value="blog">
+             <Alert variant="destructive" className="m-4">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Under Construction</AlertTitle>
+              <AlertDescription>
+                Full management for Blog Posts is not yet available as some required files are not editable. You can view existing posts, but create and edit functionality is disabled.
+              </AlertDescription>
+            </Alert>
+             <div className="p-4 text-center text-muted-foreground">Blog post management coming soon.</div>
+          </TabsContent>
+
+          <TabsContent value="static-pages">
+            <StaticPagesAdmin />
           </TabsContent>
           
           <TabsContent value="users">
             <UsersAdmin />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <SettingsAdmin />
           </TabsContent>
         </Tabs>
       </div>
