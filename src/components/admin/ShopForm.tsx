@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +13,7 @@ import ImageUpload from './ImageUpload';
 import { useQueryClient } from '@tanstack/react-query';
 import { Database } from '@/integrations/supabase/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import MDEditor from '@uiw/react-md-editor';
 
 const shopFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -172,7 +172,12 @@ export const ShopForm = ({ initialData, onSuccess }: ShopFormProps) => {
                   <FormItem>
                     <FormLabel>Long Description</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Detailed description" {...field} value={field.value ?? ''} />
+                      <div data-color-mode="light">
+                        <MDEditor
+                          value={field.value ?? ''}
+                          onChange={(value) => field.onChange(value)}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

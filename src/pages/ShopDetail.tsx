@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Store, ExternalLink, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import MDEditor from '@uiw/react-md-editor';
 
 interface Shop {
   id: string;
@@ -20,6 +21,7 @@ interface Shop {
   logo_url: string;
   website_url: string;
   category: string;
+  long_description?: string;
   meta_title?: string;
   meta_description?: string;
   canonical_url?: string;
@@ -54,10 +56,25 @@ interface Coupon {
   verified: boolean;
 }
 
+interface OtherShop {
+  id: string;
+  name:string;
+  slug: string;
+  logo_url: string;
+}
+
+interface PageCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 const ShopDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [otherShops, setOtherShops] = useState<OtherShop[]>([]);
+  const [allCategories, setAllCategories] = useState<PageCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -84,6 +101,7 @@ const ShopDetail = () => {
           document.head.appendChild(canonicalLink);
       }
       canonicalLink.setAttribute('href', shop.canonical_url || window.location.href);
+      fetchOtherData();
     }
   }, [shop]);
 
@@ -117,6 +135,36 @@ const ShopDetail = () => {
     }
 
     setLoading(false);
+  };
+
+  const fetchOtherData = async () => {
+    if (!shop || !shop.category) return;
+
+    // Fetch other shops in the same category
+    const { data: shopsData, error: shopsError } = await supabase
+        .from('shops')
+        .select('id, name, slug, logo_url')
+        .eq('category', shop.category)
+        .neq('id', shop.id)
+        .limit(4);
+
+    if (shopsError) {
+        console.error('Error fetching other shops:', shopsError);
+    } else {
+        setOtherShops(shopsData || []);
+    }
+
+    // Fetch all categories
+    const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .order('name');
+    
+    if (categoriesError) {
+        console.error('Error fetching categories:', categoriesError);
+    } else {
+        setAllCategories(categoriesData || []);
+    }
   };
 
   const handleCopyCoupon = async (code: string) => {
@@ -319,6 +367,66 @@ const ShopDetail = () => {
               )}
             </TabsContent>
           </Tabs>
+          
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-3">
+              {shop.long_description && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About {shop.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div data-color-mode="light">
+                      <MDEditor.Markdown source={shop.long_description} style={{ background: 'transparent' }} />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <div className="lg:col-span-1 space-y-8">
+              {otherShops.length > 0 && (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="text-xl">More in {shop.category}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="space-y-4">
+                              {otherShops.map(otherShop => (
+                                  <Link key={otherShop.id} to={`/shops/${otherShop.slug}`} className="flex items-center space-x-3 group">
+                                      <Avatar className="h-10 w-10">
+                                          <AvatarImage src={otherShop.logo_url} alt={otherShop.name} />
+                                          <AvatarFallback>{otherShop.name.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                      <span className="font-medium group-hover:text-primary">{otherShop.name}</span>
+                                  </Link>
+                              ))}
+                          </div>
+                      </CardContent>
+                  </Card>
+              )}
+
+              {allCategories.length > 0 && (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle className="text-xl">All Categories</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                              {allCategories.map(category => (
+                                  <Button key={category.id} variant="outline" size="sm" asChild>
+                                      <Link to={`/categories/${category.slug}`}>
+                                          {category.name}
+                                      </Link>
+                                  </Button>
+                              ))}
+                          </div>
+                      </CardContent>
+                  </Card>
+              )}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
