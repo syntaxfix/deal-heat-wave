@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import DealListings from '@/components/DealListings';
 import SearchBar from '@/components/SearchBar';
@@ -43,6 +43,21 @@ interface Stats {
   hotDeal?: any;
 }
 
+const fetchSettings = async () => {
+  const { data, error } = await supabase.from('system_settings').select('key, value');
+  if (error) {
+    console.error("Error fetching system settings", error);
+    return {};
+  }
+  
+  const settings = data.reduce((acc, { key, value }) => {
+    if (key) acc[key] = value;
+    return acc;
+  }, {} as { [key: string]: string | null });
+
+  return settings;
+};
+
 const Index = () => {
   const [categoriesData, setCategoriesData] = useState<Category[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
@@ -56,6 +71,44 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedShop, setSelectedShop] = useState('');
   const [sortBy, setSortBy] = useState('hot');
+
+  const { data: settings } = useQuery({
+    queryKey: ['system_settings'],
+    queryFn: fetchSettings,
+  });
+
+  useEffect(() => {
+    if (settings) {
+      if (settings.homepage_meta_title) {
+        document.title = settings.homepage_meta_title;
+      }
+      
+      // Update or create meta description
+      if (settings.homepage_meta_description) {
+        let metaDescription = document.querySelector('meta[name="description"]');
+        if (!metaDescription) {
+          metaDescription = document.createElement('meta');
+          metaDescription.setAttribute('name', 'description');
+          document.head.appendChild(metaDescription);
+        }
+        metaDescription.setAttribute('content', settings.homepage_meta_description);
+      }
+
+      // Update or create meta keywords
+      let metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (settings.homepage_meta_keywords) {
+        if (!metaKeywords) {
+          metaKeywords = document.createElement('meta');
+          metaKeywords.setAttribute('name', 'keywords');
+          document.head.appendChild(metaKeywords);
+        }
+        metaKeywords.setAttribute('content', settings.homepage_meta_keywords);
+      } else if (metaKeywords) {
+        // If setting is empty/null but tag exists, remove it.
+        metaKeywords.remove();
+      }
+    }
+  }, [settings]);
 
   useEffect(() => {
     fetchInitialData();
