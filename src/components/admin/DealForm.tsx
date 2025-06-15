@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -108,16 +107,16 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
   const onSubmit: SubmitHandler<DealFormValues> = async (values) => {
     setLoading(true);
     try {
-      const dealData = {
-        ...values,
-        user_id: user?.id,
-        expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
-      };
-
       if (isEditMode && initialData) {
+        const updatePayload = {
+          ...values,
+          user_id: user?.id,
+          expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
+        };
+
         const { error } = await supabase
           .from('deals')
-          .update(dealData)
+          .update(updatePayload)
           .eq('id', initialData.id);
 
         if (error) throw error;
@@ -129,10 +128,14 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
         });
         if (slugError) throw slugError;
 
-        const { error } = await supabase.from('deals').insert({
-          ...dealData,
+        const insertPayload = {
+          ...values,
           slug: slugData,
-        });
+          user_id: user?.id ?? null,
+          expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
+        };
+
+        const { error } = await supabase.from('deals').insert(insertPayload);
 
         if (error) throw error;
         toast.success('Deal created successfully!');
