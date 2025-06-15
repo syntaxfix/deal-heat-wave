@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +43,9 @@ interface Deal {
   user_id?: string;
   categories?: { name: string; slug: string };
   shops?: { name: string; slug: string; logo_url?: string };
+  meta_title?: string;
+  meta_description?: string;
+  canonical_url?: string;
 }
 
 interface Profile {
@@ -72,6 +74,22 @@ const DealDetail = () => {
       if (deal.user_id) {
         fetchDealAuthor(deal.user_id);
       }
+
+      // Set meta tags
+      document.title = deal.meta_title || `${deal.title} - DealSpark`;
+      
+      const metaDescriptionTag = document.querySelector('meta[name="description"]');
+      if (metaDescriptionTag) {
+        metaDescriptionTag.setAttribute('content', deal.meta_description || deal.description || `Find the best deal for ${deal.title}.`);
+      }
+
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
+      }
+      canonicalLink.setAttribute('href', deal.canonical_url || window.location.href);
     }
   }, [deal]);
 

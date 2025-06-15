@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,10 +11,10 @@ interface StaticPageData {
   title: string;
   slug: string;
   content: string;
-  meta_title: string;
-  meta_description: string;
-  meta_keywords: string;
-  canonical_url: string;
+  meta_title: string | null;
+  meta_description: string | null;
+  meta_keywords: string | null;
+  canonical_url: string | null;
 }
 
 const StaticPage = () => {
@@ -36,25 +35,32 @@ const StaticPage = () => {
       .select('*')
       .eq('slug', slug)
       .eq('is_visible', true)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching static page:', error);
       setPage(null);
-    } else {
+    } else if (data) {
       setPage(data);
       
       // Set meta tags
-      if (data.meta_title) {
-        document.title = data.meta_title;
-      } else {
-        document.title = `${data.title} - DealSpark`;
+      document.title = data.meta_title || `${data.title} - DealSpark`;
+      
+      const metaDescriptionTag = document.querySelector('meta[name="description"]');
+      if (metaDescriptionTag) {
+        const description = data.meta_description || `Learn more about ${data.title} on DealSpark.`;
+        metaDescriptionTag.setAttribute('content', description);
       }
       
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription && data.meta_description) {
-        metaDescription.setAttribute('content', data.meta_description);
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
       }
+      canonicalLink.setAttribute('href', data.canonical_url || window.location.href);
+    } else {
+      setPage(null);
     }
     
     setLoading(false);

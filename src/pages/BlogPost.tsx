@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +27,9 @@ interface BlogPost {
     full_name: string;
     avatar_url: string;
   } | null;
+  meta_title?: string;
+  meta_description?: string;
+  canonical_url?: string;
 }
 
 const BlogPost = () => {
@@ -50,7 +52,7 @@ const BlogPost = () => {
       .select('*')
       .eq('slug', slug)
       .eq('status', 'published')
-      .single();
+      .maybeSingle();
 
     if (postError) {
       console.error('Error fetching blog post:', postError);
@@ -89,11 +91,20 @@ const BlogPost = () => {
 
     // Set document title and meta description
     if (postData) {
-      document.title = `${postData.title} - DealSpark Blog`;
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute('content', postData.summary || '');
+      document.title = postData.meta_title || `${postData.title} - DealSpark Blog`;
+      
+      const metaDescriptionTag = document.querySelector('meta[name="description"]');
+      if (metaDescriptionTag) {
+        metaDescriptionTag.setAttribute('content', postData.meta_description || postData.summary || `Read our blog post: ${postData.title}`);
       }
+
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonicalLink);
+      }
+      canonicalLink.setAttribute('href', postData.canonical_url || window.location.href);
     }
     
     setLoading(false);

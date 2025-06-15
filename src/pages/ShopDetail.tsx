@@ -22,6 +22,9 @@ interface Shop {
   logo_url: string;
   website_url: string;
   category: string;
+  meta_title?: string;
+  meta_description?: string;
+  canonical_url?: string;
 }
 
 interface Deal {
@@ -68,6 +71,26 @@ const ShopDetail = () => {
     }
   }, [slug]);
 
+  useEffect(() => {
+    if (shop) {
+      // Set meta tags
+      document.title = shop.meta_title || `${shop.name} Deals & Coupons - DealSpark`;
+      
+      const metaDescriptionTag = document.querySelector('meta[name="description"]');
+      if (metaDescriptionTag) {
+          metaDescriptionTag.setAttribute('content', shop.meta_description || shop.description || `Find the latest deals and coupons from ${shop.name} on DealSpark.`);
+      }
+
+      let canonicalLink = document.querySelector('link[rel="canonical"]');
+      if (!canonicalLink) {
+          canonicalLink = document.createElement('link');
+          canonicalLink.setAttribute('rel', 'canonical');
+          document.head.appendChild(canonicalLink);
+      }
+      canonicalLink.setAttribute('href', shop.canonical_url || window.location.href);
+    }
+  }, [shop]);
+
   const fetchShopData = async () => {
     if (!slug) return;
 
@@ -76,7 +99,7 @@ const ShopDetail = () => {
       .from('shops')
       .select('*')
       .eq('slug', slug)
-      .single();
+      .maybeSingle();
 
     if (shopError) {
       console.error('Error fetching shop:', shopError);
