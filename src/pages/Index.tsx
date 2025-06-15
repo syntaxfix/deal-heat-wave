@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
@@ -15,7 +16,7 @@ interface Category {
   id: string;
   name: string;
   slug: string;
-  icon?: string;
+  icon?: any;
 }
 
 interface Shop {
@@ -165,7 +166,7 @@ const Index = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+              <Button size="lg" className="primary-cta-gradient text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
                 <Gift className="h-5 w-5 mr-2" />
                 Browse Hot Deals
               </Button>
@@ -228,7 +229,7 @@ const Index = () => {
           {/* Enhanced Main Content */}
           <div className="lg:w-3/4">
             {/* Hot Deals Banner */}
-            <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl p-6 mb-8 text-white">
+            <div className="limited-time-gradient rounded-2xl p-6 mb-8 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold mb-2 flex items-center">
@@ -266,7 +267,7 @@ const Index = () => {
                       <Card className="hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:border-blue-300 border-2 border-transparent">
                         <CardContent className="p-6 text-center">
                           <div className="mb-4 group-hover:scale-110 transition-transform">
-                            <IconComponent className="h-12 w-12 mx-auto text-blue-600" />
+                            {IconComponent && <IconComponent className="h-12 w-12 mx-auto text-blue-600" />}
                           </div>
                           <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
                             {category.name}
@@ -365,7 +366,7 @@ const Index = () => {
               {/* Enhanced Hot Deal Card */}
               {stats.hotDeal && (
                 <Card className="border-2 border-red-200 shadow-lg">
-                  <CardHeader className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-t-lg">
+                  <CardHeader className="limited-time-gradient text-white rounded-t-lg">
                     <CardTitle className="flex items-center text-lg">
                       <TrendingUp className="h-5 w-5 mr-2" />
                       🔥 Deal of the Day
@@ -396,7 +397,7 @@ const Index = () => {
                             </Badge>
                           )}
                         </div>
-                        <Button className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600">
+                        <Button className="w-full limited-time-gradient hover:opacity-90">
                           Get This Deal
                         </Button>
                       </div>
