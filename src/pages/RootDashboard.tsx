@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,7 +23,7 @@ interface Shop {
   name: string;
   description: string;
   website_url: string;
-  is_active: boolean;
+  slug: string;
 }
 
 interface Blog {
@@ -30,8 +31,9 @@ interface Blog {
   created_at: string;
   title: string;
   content: string;
-  author: string;
-  status: 'draft' | 'published' | 'archived';
+  author_id: string;
+  status: 'published' | 'draft';
+  slug: string;
 }
 
 interface Page {
@@ -40,7 +42,7 @@ interface Page {
   title: string;
   slug: string;
   content: string;
-  status: 'draft' | 'published' | 'archived';
+  is_visible: boolean;
 }
 
 interface User {
@@ -84,7 +86,7 @@ const RootDashboard = () => {
   const { data: blogs = [], isLoading: blogsLoading } = useQuery({
     queryKey: ['admin-blogs'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     }
@@ -94,7 +96,7 @@ const RootDashboard = () => {
   const { data: pages = [], isLoading: pagesLoading } = useQuery({
     queryKey: ['admin-pages'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('pages').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('static_pages').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     }
@@ -111,191 +113,171 @@ const RootDashboard = () => {
   });
 
   // Mutation functions
-  const createShopMutation = useMutation(
-    async (newShop: Omit<Shop, 'id' | 'created_at'>) => {
+  const createShopMutation = useMutation({
+    mutationFn: async (newShop: Omit<Shop, 'id' | 'created_at'>) => {
       const { data, error } = await supabase.from('shops').insert([newShop]);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-shops'] });
-        setIsShopDialogOpen(false);
-        setShopForm({});
-        toast.success('Shop created successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to create shop: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-shops'] });
+      setIsShopDialogOpen(false);
+      setShopForm({});
+      toast.success('Shop created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create shop: ${error.message}`);
+    },
+  });
 
-  const updateShopMutation = useMutation(
-    async (updatedShop: Shop) => {
+  const updateShopMutation = useMutation({
+    mutationFn: async (updatedShop: Shop) => {
       const { data, error } = await supabase.from('shops').update(updatedShop).eq('id', updatedShop.id);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-shops'] });
-        setIsShopDialogOpen(false);
-        setShopForm({});
-        setEditingShopId(null);
-        toast.success('Shop updated successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to update shop: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-shops'] });
+      setIsShopDialogOpen(false);
+      setShopForm({});
+      setEditingShopId(null);
+      toast.success('Shop updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update shop: ${error.message}`);
+    },
+  });
 
-  const deleteShopMutation = useMutation(
-    async (id: string) => {
+  const deleteShopMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { data, error } = await supabase.from('shops').delete().eq('id', id);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-shops'] });
-        toast.success('Shop deleted successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to delete shop: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-shops'] });
+      toast.success('Shop deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete shop: ${error.message}`);
+    },
+  });
 
-  const createBlogMutation = useMutation(
-    async (newBlog: Omit<Blog, 'id' | 'created_at'>) => {
-      const { data, error } = await supabase.from('blogs').insert([newBlog]);
+  const createBlogMutation = useMutation({
+    mutationFn: async (newBlog: Omit<Blog, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase.from('blog_posts').insert([newBlog]);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
-        setIsBlogDialogOpen(false);
-        setBlogForm({});
-        toast.success('Blog created successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to create blog: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      setIsBlogDialogOpen(false);
+      setBlogForm({});
+      toast.success('Blog created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create blog: ${error.message}`);
+    },
+  });
 
-  const updateBlogMutation = useMutation(
-    async (updatedBlog: Blog) => {
-      const { data, error } = await supabase.from('blogs').update(updatedBlog).eq('id', updatedBlog.id);
+  const updateBlogMutation = useMutation({
+    mutationFn: async (updatedBlog: Blog) => {
+      const { data, error } = await supabase.from('blog_posts').update(updatedBlog).eq('id', updatedBlog.id);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
-        setIsBlogDialogOpen(false);
-        setBlogForm({});
-        setEditingBlogId(null);
-        toast.success('Blog updated successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to update blog: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      setIsBlogDialogOpen(false);
+      setBlogForm({});
+      setEditingBlogId(null);
+      toast.success('Blog updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update blog: ${error.message}`);
+    },
+  });
 
-  const deleteBlogMutation = useMutation(
-    async (id: string) => {
-      const { data, error } = await supabase.from('blogs').delete().eq('id', id);
+  const deleteBlogMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.from('blog_posts').delete().eq('id', id);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
-        toast.success('Blog deleted successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to delete blog: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      toast.success('Blog deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete blog: ${error.message}`);
+    },
+  });
 
-  const createPageMutation = useMutation(
-    async (newPage: Omit<Page, 'id' | 'created_at'>) => {
-      const { data, error } = await supabase.from('pages').insert([newPage]);
+  const createPageMutation = useMutation({
+    mutationFn: async (newPage: Omit<Page, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase.from('static_pages').insert([newPage]);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
-        setIsPageDialogOpen(false);
-        setPageForm({});
-        toast.success('Page created successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to create page: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
+      setIsPageDialogOpen(false);
+      setPageForm({});
+      toast.success('Page created successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create page: ${error.message}`);
+    },
+  });
 
-  const updatePageMutation = useMutation(
-    async (updatedPage: Page) => {
-      const { data, error } = await supabase.from('pages').update(updatedPage).eq('id', updatedPage.id);
+  const updatePageMutation = useMutation({
+    mutationFn: async (updatedPage: Page) => {
+      const { data, error } = await supabase.from('static_pages').update(updatedPage).eq('id', updatedPage.id);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
-        setIsPageDialogOpen(false);
-        setPageForm({});
-        setEditingPageId(null);
-        toast.success('Page updated successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to update page: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
+      setIsPageDialogOpen(false);
+      setPageForm({});
+      setEditingPageId(null);
+      toast.success('Page updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update page: ${error.message}`);
+    },
+  });
 
-  const deletePageMutation = useMutation(
-    async (id: string) => {
-      const { data, error } = await supabase.from('pages').delete().eq('id', id);
+  const deletePageMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.from('static_pages').delete().eq('id', id);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
-        toast.success('Page deleted successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to delete page: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-pages'] });
+      toast.success('Page deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete page: ${error.message}`);
+    },
+  });
 
-  const updateUserMutation = useMutation(
-    async (updatedUser: User) => {
+  const updateUserMutation = useMutation({
+    mutationFn: async (updatedUser: User) => {
       const { data, error } = await supabase.from('profiles').update(updatedUser).eq('id', updatedUser.id);
       if (error) throw error;
       return data;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-        setEditingUserId(null);
-        toast.success('User updated successfully!');
-      },
-      onError: (error: any) => {
-        toast.error(`Failed to update user: ${error.message}`);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setEditingUserId(null);
+      toast.success('User updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update user: ${error.message}`);
+    },
+  });
 
   // Form handlers and utility functions
   const handleShopInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -314,16 +296,28 @@ const RootDashboard = () => {
     setUserForm({ ...userForm, [e.target.name]: e.target.value });
   };
 
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9 -]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
   const handleShopCreate = () => {
-    createShopMutation.mutate(shopForm as Omit<Shop, 'id' | 'created_at'>);
+    const slug = generateSlug(shopForm.name || '');
+    createShopMutation.mutate({ ...shopForm, slug } as Omit<Shop, 'id' | 'created_at'>);
   };
 
   const handleBlogCreate = () => {
-    createBlogMutation.mutate(blogForm as Omit<Blog, 'id' | 'created_at'>);
+    const slug = generateSlug(blogForm.title || '');
+    createBlogMutation.mutate({ ...blogForm, slug } as Omit<Blog, 'id' | 'created_at'>);
   };
 
   const handlePageCreate = () => {
-    createPageMutation.mutate(pageForm as Omit<Page, 'id' | 'created_at'>);
+    const slug = generateSlug(pageForm.title || '');
+    createPageMutation.mutate({ ...pageForm, slug } as Omit<Page, 'id' | 'created_at'>);
   };
 
   const handleShopEdit = () => {
@@ -379,7 +373,7 @@ const RootDashboard = () => {
 
   const renderShopsContent = () => {
     if (shopsLoading) {
-      return <TableSkeleton rows={5} columns={5} />;
+      return <TableSkeleton rows={5} columns={4} />;
     }
 
     if (shops.length === 0) {
@@ -401,7 +395,6 @@ const RootDashboard = () => {
             <TableHead>Name</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Website</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -411,11 +404,6 @@ const RootDashboard = () => {
               <TableCell className="font-medium">{shop.name}</TableCell>
               <TableCell>{shop.description}</TableCell>
               <TableCell>{shop.website_url}</TableCell>
-              <TableCell>
-                <Badge variant={shop.is_active ? "default" : "secondary"}>
-                  {shop.is_active ? "Active" : "Inactive"}
-                </Badge>
-              </TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Button size="sm" variant="outline" onClick={() => handleEditShop(shop)}>
@@ -435,7 +423,7 @@ const RootDashboard = () => {
 
   const renderBlogsContent = () => {
     if (blogsLoading) {
-      return <TableSkeleton rows={5} columns={5} />;
+      return <TableSkeleton rows={5} columns={4} />;
     }
 
     if (blogs.length === 0) {
@@ -455,7 +443,6 @@ const RootDashboard = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
-            <TableHead>Author</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Actions</TableHead>
@@ -465,7 +452,6 @@ const RootDashboard = () => {
           {blogs.map((blog) => (
             <TableRow key={blog.id}>
               <TableCell className="font-medium">{blog.title}</TableCell>
-              <TableCell>{blog.author}</TableCell>
               <TableCell>
                 <Badge variant={blog.status === 'published' ? "default" : "secondary"}>
                   {blog.status}
@@ -512,7 +498,7 @@ const RootDashboard = () => {
           <TableRow>
             <TableHead>Title</TableHead>
             <TableHead>Slug</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Visibility</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -522,8 +508,8 @@ const RootDashboard = () => {
               <TableCell className="font-medium">{page.title}</TableCell>
               <TableCell>{page.slug}</TableCell>
               <TableCell>
-                <Badge variant={page.status === 'published' ? "default" : "secondary"}>
-                  {page.status}
+                <Badge variant={page.is_visible ? "default" : "secondary"}>
+                  {page.is_visible ? 'Visible' : 'Hidden'}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -545,7 +531,7 @@ const RootDashboard = () => {
 
   const renderUsersContent = () => {
     if (usersLoading) {
-      return <TableSkeleton rows={5} columns={5} />;
+      return <TableSkeleton rows={5} columns={4} />;
     }
 
     if (users.length === 0) {
@@ -567,7 +553,6 @@ const RootDashboard = () => {
             <TableHead>Username</TableHead>
             <TableHead>Full Name</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead>Joined</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -581,7 +566,6 @@ const RootDashboard = () => {
                   {user.role}
                 </Badge>
               </TableCell>
-              <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
               <TableCell>
                 <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
                   <Edit className="h-4 w-4" />
@@ -669,23 +653,13 @@ const RootDashboard = () => {
                         className="col-span-3"
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="is_active" className="text-right">
-                        Status
-                      </Label>
-                      <Select onValueChange={(value) => setShopForm({ ...shopForm, is_active: value === 'true' })}>
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select status" defaultValue={shopForm.is_active?.toString()} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="true">Active</SelectItem>
-                          <SelectItem value="false">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                   <DialogFooter>
-                    <Button type="button" onClick={editingShopId ? handleShopEdit : handleShopCreate} disabled={createShopMutation.isLoading || updateShopMutation.isLoading}>
+                    <Button 
+                      type="button" 
+                      onClick={editingShopId ? handleShopEdit : handleShopCreate} 
+                      disabled={createShopMutation.isPending || updateShopMutation.isPending}
+                    >
                       {editingShopId ? 'Update Shop' : 'Create Shop'}
                     </Button>
                   </DialogFooter>
@@ -746,37 +720,28 @@ const RootDashboard = () => {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="author" className="text-right">
-                        Author
-                      </Label>
-                      <Input
-                        type="text"
-                        id="author"
-                        name="author"
-                        value={blogForm.author || ''}
-                        onChange={handleBlogInputChange}
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="status" className="text-right">
                         Status
                       </Label>
-                      <Select onValueChange={(value) => setBlogForm({ ...blogForm, status: value as any })}>
+                      <Select onValueChange={(value) => setBlogForm({ ...blogForm, status: value as 'published' | 'draft' })}>
                         <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select status" defaultValue={blogForm.status} />
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="draft">Draft</SelectItem>
                           <SelectItem value="published">Published</SelectItem>
-                          <SelectItem value="archived">Archived</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="button" onClick={editingBlogId ? handleBlogEdit : handleBlogCreate} disabled={createBlogMutation.isLoading || updateBlogMutation.isLoading}>
-                      {editingBlogId ? 'Update Blog' : 'Create Blog'}</Button>
+                    <Button 
+                      type="button" 
+                      onClick={editingBlogId ? handleBlogEdit : handleBlogCreate} 
+                      disabled={createBlogMutation.isPending || updateBlogMutation.isPending}
+                    >
+                      {editingBlogId ? 'Update Blog' : 'Create Blog'}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -823,19 +788,6 @@ const RootDashboard = () => {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="slug" className="text-right">
-                        Slug
-                      </Label>
-                      <Input
-                        type="text"
-                        id="slug"
-                        name="slug"
-                        value={pageForm.slug || ''}
-                        onChange={handlePageInputChange}
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="content" className="text-right">
                         Content
                       </Label>
@@ -848,24 +800,28 @@ const RootDashboard = () => {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="status" className="text-right">
-                        Status
+                      <Label htmlFor="is_visible" className="text-right">
+                        Visibility
                       </Label>
-                      <Select onValueChange={(value) => setPageForm({ ...pageForm, status: value as any })}>
+                      <Select onValueChange={(value) => setPageForm({ ...pageForm, is_visible: value === 'true' })}>
                         <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Select status" defaultValue={pageForm.status} />
+                          <SelectValue placeholder="Select visibility" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="published">Published</SelectItem>
-                          <SelectItem value="archived">Archived</SelectItem>
+                          <SelectItem value="true">Visible</SelectItem>
+                          <SelectItem value="false">Hidden</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="button" onClick={editingPageId ? handlePageEdit : handlePageCreate} disabled={createPageMutation.isLoading || updatePageMutation.isLoading}>
-                      {editingPageId ? 'Update Page' : 'Create Page'}</Button>
+                    <Button 
+                      type="button" 
+                      onClick={editingPageId ? handlePageEdit : handlePageCreate} 
+                      disabled={createPageMutation.isPending || updatePageMutation.isPending}
+                    >
+                      {editingPageId ? 'Update Page' : 'Create Page'}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -902,7 +858,7 @@ const RootDashboard = () => {
               <Label htmlFor="role" className="text-right">
                 Role
               </Label>
-              <Select onValueChange={(value) => setUserForm({ ...userForm, role: value as any })} defaultValue={userForm.role}>
+              <Select onValueChange={(value) => setUserForm({ ...userForm, role: value as 'user' | 'admin' })} defaultValue={userForm.role}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
@@ -914,7 +870,7 @@ const RootDashboard = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" onClick={handleUserEdit} disabled={updateUserMutation.isLoading}>
+            <Button type="button" onClick={handleUserEdit} disabled={updateUserMutation.isPending}>
               Update User
             </Button>
           </DialogFooter>
