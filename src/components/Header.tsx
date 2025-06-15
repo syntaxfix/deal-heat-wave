@@ -22,7 +22,7 @@ const Header = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Implement search functionality
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       console.log('Searching for:', searchQuery);
     }
   };

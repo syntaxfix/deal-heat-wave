@@ -254,7 +254,7 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Enhanced Categories Section */}
+            {/* Enhanced Categories Section with Better Layout */}
             <section className="mb-12">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold mb-4 text-gray-900">
@@ -265,7 +265,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6">
                 {categoriesData.map((category) => {
                   const IconComponent = category.icon;
                   return (
@@ -274,19 +274,24 @@ const Index = () => {
                       to={`/category/${category.slug}`}
                       className="group"
                     >
-                      <Card className="hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:border-blue-300 border-2 border-transparent">
-                        <CardContent className="p-6 text-center">
-                          <div className="mb-4 group-hover:scale-110 transition-transform">
+                      <Card className="hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:border-blue-300 border-2 border-transparent bg-gradient-to-br from-white to-blue-50/30 h-full">
+                        <CardContent className="p-6 text-center flex flex-col items-center justify-center min-h-[140px]">
+                          <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
                             {IconComponent ? (
-                              <IconComponent className="h-12 w-12 mx-auto text-blue-600" />
+                              <div className="p-3 bg-blue-100 rounded-2xl group-hover:bg-blue-200 transition-colors">
+                                <IconComponent className="h-8 w-8 text-blue-600" />
+                              </div>
                             ) : (
-                              <div className="h-12 w-12 mx-auto bg-blue-100 rounded-lg flex items-center justify-center">
+                              <div className="h-14 w-14 mx-auto bg-blue-100 rounded-2xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                                 <span className="text-blue-600 font-bold text-xl">{category.name.charAt(0)}</span>
                               </div>
                             )}
                           </div>
-                          <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                          <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors text-sm">
                             {category.name}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Explore deals
                           </div>
                         </CardContent>
                       </Card>

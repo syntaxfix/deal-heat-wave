@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
@@ -11,10 +12,15 @@ interface SearchBarProps {
 
 const SearchBar = ({ onSearch, placeholder = "Search deals..." }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchQuery);
+    if (searchQuery.trim()) {
+      // Navigate to search results page
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      onSearch(searchQuery);
+    }
   };
 
   return (

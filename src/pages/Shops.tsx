@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Store, ExternalLink, Tag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Shop {
   id: string;
@@ -159,9 +159,11 @@ const Shops = () => {
                     <div className="flex space-x-2">
                       <Link
                         to={`/shop/${shop.slug}`}
-                        className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium text-center transition-colors"
+                        className="flex-1"
                       >
-                        View Deals
+                        <Button variant="limited-time" className="w-full">
+                          View Deals
+                        </Button>
                       </Link>
                       {shop.website_url && (
                         <a

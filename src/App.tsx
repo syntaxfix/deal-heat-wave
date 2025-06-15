@@ -24,6 +24,7 @@ import Admin from "./pages/Admin";
 import Contact from "./pages/Contact";
 import StaticPage from "./pages/StaticPage";
 import TagPage from "./pages/TagPage";
+import SearchResults from "./pages/SearchResults";
 import NotFound from "./pages/NotFound";
 import CookieConsent from "./components/CookieConsent";
 import Footer from "./components/Footer";
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/shops" element={<Shops />} />
                 <Route path="/shop/:slug" element={<ShopDetail />} />
                 <Route path="/category/:slug" element={<Category />} />
+                <Route path="/search" element={<SearchResults />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/about" element={<StaticPage />} />
                 <Route path="/privacy" element={<StaticPage />} />
