@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Clock, ExternalLink, Store } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
+import { Button } from '@/components/ui/button';
 
 interface Deal {
   id: string;
@@ -94,15 +94,15 @@ const DealCardCompact = ({ deal }: DealCardCompactProps) => {
               </Link>
               
               {shops && (
-                <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+                <Link to={`/shop/${shops.slug}`} className="flex items-center space-x-1 ml-2 flex-shrink-0 hover:bg-gray-50 px-2 py-1 rounded transition-colors">
                   <Avatar className="h-4 w-4">
                     <AvatarImage src={shops.logo_url} />
                     <AvatarFallback className="text-xs">
                       {shops.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-xs text-gray-600">{shops.name}</span>
-                </div>
+                  <span className="text-xs text-gray-600 hover:text-primary transition-colors">{shops.name}</span>
+                </Link>
               )}
             </div>
 
@@ -140,16 +140,22 @@ const DealCardCompact = ({ deal }: DealCardCompactProps) => {
               />
               
               {affiliate_link && (
-                <a
-                  href={affiliate_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded text-xs font-medium flex items-center space-x-1 transition-colors"
-                  onClick={(e) => e.stopPropagation()}
+                <Button
+                  asChild
+                  variant="limited-time"
+                  size="sm"
+                  className="text-xs px-3 py-1.5 h-auto"
                 >
-                  <span>Get Deal</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
+                  <a
+                    href={affiliate_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span>Get Deal</span>
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                </Button>
               )}
             </div>
           </div>

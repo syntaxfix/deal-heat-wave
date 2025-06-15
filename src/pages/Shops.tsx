@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -166,14 +167,20 @@ const Shops = () => {
                         </Button>
                       </Link>
                       {shop.website_url && (
-                        <a
-                          href={shop.website_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="icon"
+                          className="flex-shrink-0"
                         >
-                          <ExternalLink className="h-4 w-4 text-gray-600" />
-                        </a>
+                          <a
+                            href={shop.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
                       )}
                     </div>
                   </CardContent>

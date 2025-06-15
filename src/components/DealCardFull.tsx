@@ -2,8 +2,9 @@
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Clock, ExternalLink, Store, Tag } from 'lucide-react';
+import { Clock, ExternalLink, Store, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
 
@@ -54,94 +55,98 @@ const DealCardFull = ({ deal }: DealCardFullProps) => {
   const dealSlug = slug || id;
 
   return (
-    <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden">
+    <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md overflow-hidden bg-white">
       <CardContent className="p-0">
         <div className="flex flex-col lg:flex-row">
-          {/* Image Section */}
-          <div className="lg:w-80 flex-shrink-0">
-            <Link to={`/deal/${dealSlug}`}>
-              <div className="relative aspect-video lg:aspect-square bg-gray-100 overflow-hidden">
-                {image_url ? (
-                  <img
-                    src={image_url}
-                    alt={title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
-                    <Store className="h-16 w-16 text-gray-400" />
-                  </div>
-                )}
-                
-                {/* Discount Badge */}
-                {discount_percentage > 0 && (
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-red-600 hover:bg-red-700 text-white font-bold text-lg px-3 py-1">
-                      {discount_percentage}% OFF
-                    </Badge>
-                  </div>
-                )}
+          {/* Large Image Section */}
+          <Link to={`/deal/${dealSlug}`} className="lg:w-80 flex-shrink-0">
+            <div className="relative h-48 lg:h-64 bg-gray-100 overflow-hidden">
+              {image_url ? (
+                <img
+                  src={image_url}
+                  alt={title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
+                  <Store className="h-16 w-16 text-gray-400" />
+                </div>
+              )}
+              
+              {/* Large Discount Badge */}
+              {discount_percentage > 0 && (
+                <div className="absolute top-4 left-4">
+                  <Badge className="bg-red-600 text-white text-lg px-3 py-1 font-bold">
+                    -{discount_percentage}%
+                  </Badge>
+                </div>
+              )}
+
+              {/* View overlay */}
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Button variant="limited-time" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Deal
+                  </Button>
+                </div>
               </div>
-            </Link>
-          </div>
+            </div>
+          </Link>
 
           {/* Content Section */}
-          <div className="flex-1 p-6 space-y-4">
-            {/* Category and Shop */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {categories && (
-                  <Link 
-                    to={`/category/${categories.slug}`}
-                    className="flex items-center space-x-1 text-sm text-primary hover:underline font-medium"
-                  >
-                    <Tag className="h-3 w-3" />
-                    <span>{categories.name}</span>
+          <div className="flex-1 p-6 flex flex-col justify-between min-h-64">
+            <div className="space-y-4">
+              {/* Header with Shop */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <Link to={`/deal/${dealSlug}`}>
+                    <h3 className="text-xl font-bold text-gray-900 line-clamp-2 group-hover:text-primary transition-colors">
+                      {title}
+                    </h3>
                   </Link>
-                )}
+                </div>
+                
                 {shops && (
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="h-6 w-6">
+                  <Link 
+                    to={`/shop/${shops.slug}`} 
+                    className="flex items-center space-x-2 ml-4 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <Avatar className="h-8 w-8">
                       <AvatarImage src={shops.logo_url} />
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-sm">
                         {shops.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <Link 
-                      to={`/shop/${shops.slug}`}
-                      className="text-sm text-gray-600 hover:text-primary font-medium"
-                    >
+                    <span className="text-sm font-medium text-gray-700 hover:text-primary transition-colors">
                       {shops.name}
-                    </Link>
-                  </div>
+                    </span>
+                  </Link>
                 )}
               </div>
-              
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <Clock className="h-4 w-4" />
-                <span>{formatDistanceToNow(new Date(created_at), { addSuffix: true })}</span>
-              </div>
+
+              {/* Description */}
+              {displayDescription && (
+                <p className="text-gray-600 line-clamp-3 leading-relaxed">
+                  {displayDescription}
+                </p>
+              )}
+
+              {/* Category Badge */}
+              {categories && (
+                <Link to={`/category/${categories.slug}`}>
+                  <Badge variant="secondary" className="hover:bg-primary hover:text-white transition-colors">
+                    {categories.name}
+                  </Badge>
+                </Link>
+              )}
             </div>
 
-            {/* Title */}
-            <Link to={`/deal/${dealSlug}`}>
-              <h2 className="text-2xl font-bold text-gray-900 group-hover:text-primary transition-colors line-clamp-2">
-                {title}
-              </h2>
-            </Link>
-
-            {/* Description */}
-            {displayDescription && (
-              <p className="text-gray-600 line-clamp-3 text-lg leading-relaxed">
-                {displayDescription}
-              </p>
-            )}
-
-            {/* Price and Action Section */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center space-x-4">
-                {/* Price Section */}
-                {original_price > 0 && discounted_price > 0 && (
+            {/* Bottom Section */}
+            <div className="space-y-4">
+              {/* Price Section */}
+              {original_price > 0 && discounted_price > 0 && (
+                <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-3">
                     <span className="text-3xl font-bold text-green-600">
                       ${discounted_price.toFixed(2)}
@@ -150,30 +155,57 @@ const DealCardFull = ({ deal }: DealCardFullProps) => {
                       ${original_price.toFixed(2)}
                     </span>
                   </div>
-                )}
+                  <div className="text-sm text-gray-600 bg-green-100 px-2 py-1 rounded">
+                    Save ${(original_price - discounted_price).toFixed(2)}
+                  </div>
+                </div>
+              )}
 
-                {/* Voting */}
+              {/* Meta Information */}
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center space-x-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{formatDistanceToNow(new Date(created_at), { addSuffix: true })}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between pt-2">
                 <VotingSystem
                   dealId={id}
                   initialUpvotes={upvotes}
                   initialDownvotes={downvotes}
                   initialHeatScore={heat_score}
                 />
+                
+                <div className="flex space-x-3">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/deal/${dealSlug}`}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Link>
+                  </Button>
+                  
+                  {affiliate_link && (
+                    <Button
+                      asChild
+                      variant="limited-time"
+                      size="lg"
+                      className="shadow-lg hover:shadow-xl"
+                    >
+                      <a
+                        href={affiliate_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span>Get This Deal</span>
+                        <ExternalLink className="h-4 w-4 ml-2" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
-
-              {/* Action Button */}
-              {affiliate_link && (
-                <a
-                  href={affiliate_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg text-lg font-semibold flex items-center space-x-2 transition-all duration-200 hover:scale-105 shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span>Get Deal</span>
-                  <ExternalLink className="h-5 w-5" />
-                </a>
-              )}
             </div>
           </div>
         </div>

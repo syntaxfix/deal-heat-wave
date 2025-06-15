@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
-import DealCard from '@/components/DealCard';
+import DealListings from '@/components/DealListings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Store, ExternalLink, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { ViewType } from '@/components/ViewSwitcher';
+import ViewSwitcher from '@/components/ViewSwitcher';
 
 interface Shop {
   id: string;
@@ -58,6 +60,7 @@ const ShopDetail = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [viewType, setViewType] = useState<ViewType>('grid');
 
   useEffect(() => {
     if (slug) {
@@ -258,10 +261,18 @@ const ShopDetail = () => {
                   </CardContent>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {deals.map((deal) => (
-                    <DealCard key={deal.id} deal={deal} />
-                  ))}
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {deals.length} Deal{deals.length !== 1 ? 's' : ''} from {shop.name}
+                    </h2>
+                    <ViewSwitcher currentView={viewType} onViewChange={setViewType} />
+                  </div>
+                  <DealListings
+                    shopSlug={slug}
+                    sortBy="newest"
+                    viewType={viewType}
+                  />
                 </div>
               )}
             </TabsContent>
@@ -287,7 +298,7 @@ const ShopDetail = () => {
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-lg">{coupon.title}</CardTitle>
                           {coupon.verified && (
-                            <Badge className="bg-green-600">Verified</Badge>
+                            <Badge variant="limited-time">Verified</Badge>
                           )}
                         </div>
                         {coupon.description && (
@@ -304,6 +315,7 @@ const ShopDetail = () => {
                           </div>
                           <Button
                             size="sm"
+                            variant="limited-time"
                             onClick={() => handleCopyCoupon(coupon.code)}
                             className="flex items-center space-x-1"
                           >
