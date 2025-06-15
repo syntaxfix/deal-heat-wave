@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Database } from '@/integrations/supabase/types';
 
 const categoryFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -22,39 +24,62 @@ const categoryFormSchema = z.object({
 });
 
 type CategoryFormValues = z.infer<typeof categoryFormSchema>;
+type Category = Database['public']['Tables']['categories']['Row'];
 
-export const CategoryForm = () => {
+interface CategoryFormProps {
+  initialData?: Category | null;
+  onSuccess?: () => void;
+}
+
+export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
-    defaultValues: { name: '', description: '', icon: '' },
+    defaultValues: initialData || { name: '', description: '', icon: '', meta_title: '', meta_description: '', meta_keywords: '', canonical_url: '' },
   });
+
+  const isEditMode = !!initialData;
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    } else {
+      form.reset({ name: '', description: '', icon: '', meta_title: '', meta_description: '', meta_keywords: '', canonical_url: '' });
+    }
+  }, [initialData, form]);
 
   const onSubmit: SubmitHandler<CategoryFormValues> = async (values) => {
     setLoading(true);
     try {
-      const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
-        title: values.name,
-        table_name: 'categories',
-      });
-      if (slugError) throw slugError;
+      if (isEditMode && initialData) {
+        const { error } = await supabase
+          .from('categories')
+          .update(values)
+          .eq('id', initialData.id);
 
-      const { error } = await supabase.from('categories').insert({ 
-        name: values.name,
-        description: values.description,
-        icon: values.icon,
-        meta_title: values.meta_title,
-        meta_description: values.meta_description,
-        meta_keywords: values.meta_keywords,
-        canonical_url: values.canonical_url,
-        slug: slugData
-      });
-      if (error) throw error;
+        if (error) throw error;
+        toast.success('Category updated successfully!');
+      } else {
+        const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
+          title: values.name,
+          table_name: 'categories',
+        });
+        if (slugError) throw slugError;
 
-      toast.success('Category created successfully!');
-      form.reset();
+        const { error } = await supabase.from('categories').insert({ 
+          ...values,
+          slug: slugData
+        });
+        if (error) throw error;
+        toast.success('Category created successfully!');
+      }
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
-      console.error('Error creating category:', error);
+      console.error('Error saving category:', error);
       toast.error(`Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -81,7 +106,7 @@ export const CategoryForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
-              <FormControl><Textarea placeholder="Category description" {...field} /></FormControl>
+              <FormControl><Textarea placeholder="Category description" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -92,7 +117,7 @@ export const CategoryForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Icon (e.g., from lucide-react)</FormLabel>
-              <FormControl><Input placeholder="cpu" {...field} /></FormControl>
+              <FormControl><Input placeholder="cpu" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -105,7 +130,7 @@ export const CategoryForm = () => {
             <FormItem>
               <FormLabel>Meta Title</FormLabel>
               <FormControl>
-                <Input placeholder="SEO Title" {...field} />
+                <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -118,7 +143,7 @@ export const CategoryForm = () => {
             <FormItem>
               <FormLabel>Meta Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="SEO Description" {...field} />
+                <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -131,7 +156,7 @@ export const CategoryForm = () => {
             <FormItem>
               <FormLabel>Meta Keywords</FormLabel>
               <FormControl>
-                <Input placeholder="keyword1, keyword2" {...field} />
+                <Input placeholder="keyword1, keyword2" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -144,7 +169,7 @@ export const CategoryForm = () => {
             <FormItem>
               <FormLabel>Canonical URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/canonical-url" {...field} />
+                <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -152,7 +177,7 @@ export const CategoryForm = () => {
         />
         <Button type="submit" disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Create Category
+          {isEditMode ? 'Update Category' : 'Create Category'}
         </Button>
       </form>
     </Form>
