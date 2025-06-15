@@ -260,6 +260,25 @@ const RootDashboard = () => {
     }
   });
 
+  // Data for dropdowns
+  const { data: allCategoriesData } = useQuery({
+    queryKey: ['all-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('categories').select('id, name');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const { data: allShopsData } = useQuery({
+    queryKey: ['all-shops'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('shops').select('id, name');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const shops = shopsData?.data || [];
   const blogs = blogsData?.data || [];
   const pages = pagesData?.data || [];
@@ -1582,7 +1601,7 @@ const RootDashboard = () => {
       </Dialog>
 
       <Dialog open={isDealDialogOpen} onOpenChange={setIsDealDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Deal</DialogTitle>
             <DialogDescription>
@@ -1671,8 +1690,38 @@ const RootDashboard = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category_id" className="text-right">Category</Label>
+              <Select onValueChange={(value) => setDealForm({ ...dealForm, category_id: value })} value={dealForm.category_id || ''}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCategoriesData?.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shop_id" className="text-right">Shop</Label>
+              <Select onValueChange={(value) => setDealForm({ ...dealForm, shop_id: value })} value={dealForm.shop_id || ''}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a shop" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allShopsData?.map((shop) => (
+                    <SelectItem key={shop.id} value={shop.id}>
+                      {shop.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="status" className="text-right">Status</Label>
-              <Select onValueChange={(value) => setDealForm({ ...dealForm, status: value as 'pending' | 'approved' | 'rejected' })} defaultValue={dealForm.status}>
+              <Select onValueChange={(value) => setDealForm({ ...dealForm, status: value as 'pending' | 'approved' | 'rejected' })} value={dealForm.status}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -1711,17 +1760,6 @@ const RootDashboard = () => {
                 id="meta_keywords"
                 name="meta_keywords"
                 value={dealForm.meta_keywords || ''}
-                onChange={handleDealInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="canonical_url" className="text-right">Canonical URL</Label>
-              <Input
-                type="text"
-                id="canonical_url"
-                name="canonical_url"
-                value={dealForm.canonical_url || ''}
                 onChange={handleDealInputChange}
                 className="col-span-3"
               />
