@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Database } from '@/integrations/supabase/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const categoryFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -93,100 +95,104 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl><Input placeholder="Category Name" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="icon"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Icon (e.g., from lucide-react)</FormLabel>
-              <FormControl><Input placeholder="cpu" {...field} value={field.value ?? ''} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="md:col-span-2">
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl><Textarea placeholder="Category description" {...field} value={field.value ?? ''} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-         <h3 className="text-lg font-medium pt-4 md:col-span-2">SEO</h3>
-        <FormField
-          control={form.control}
-          name="meta_title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Meta Title</FormLabel>
-              <FormControl>
-                <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="meta_keywords"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Meta Keywords</FormLabel>
-              <FormControl>
-                <Input placeholder="keyword1, keyword2" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="md:col-span-2">
-          <FormField
-            control={form.control}
-            name="meta_description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Meta Description</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <FormField
-            control={form.control}
-            name="canonical_url"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Canonical URL</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="md:col-span-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col max-h-[80vh]">
+        <ScrollArea className="flex-grow pr-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl><Input placeholder="Category Name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="icon"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Icon (e.g., from lucide-react)</FormLabel>
+                  <FormControl><Input placeholder="cpu" {...field} value={field.value ?? ''} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="md:col-span-2">
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl><Textarea placeholder="Category description" {...field} value={field.value ?? ''} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+             <h3 className="text-lg font-medium pt-4 md:col-span-2">SEO</h3>
+            <FormField
+              control={form.control}
+              name="meta_title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Meta Title</FormLabel>
+                  <FormControl>
+                    <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="meta_keywords"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Meta Keywords</FormLabel>
+                  <FormControl>
+                    <Input placeholder="keyword1, keyword2" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="md:col-span-2">
+              <FormField
+                control={form.control}
+                name="meta_description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Meta Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <FormField
+                control={form.control}
+                name="canonical_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Canonical URL</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </ScrollArea>
+        <div className="flex-shrink-0 pt-6 flex justify-end">
           <Button type="submit" disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {isEditMode ? 'Update Category' : 'Create Category'}
@@ -196,3 +202,4 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
     </Form>
   );
 };
+
