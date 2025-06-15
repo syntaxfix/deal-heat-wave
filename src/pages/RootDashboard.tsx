@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -238,8 +237,7 @@ const RootDashboard = () => {
         .select(`
           *,
           categories(id, name),
-          shops(id, name),
-          profiles(username, full_name)
+          shops(id, name)
         `)
         .order('created_at', { ascending: false });
       
@@ -249,7 +247,26 @@ const RootDashboard = () => {
       }
       
       if (data) {
-        setDeals(data as Deal[]);
+        // Fetch user profiles separately for deals that have user_id
+        const userIds = data.filter(deal => deal.user_id).map(deal => deal.user_id);
+        let profiles = [];
+        
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, username, full_name')
+            .in('id', userIds);
+          
+          profiles = profilesData || [];
+        }
+        
+        // Map deals with their user profiles
+        const dealsWithProfiles = data.map(deal => ({
+          ...deal,
+          profiles: deal.user_id ? profiles.find(profile => profile.id === deal.user_id) : null
+        }));
+        
+        setDeals(dealsWithProfiles as Deal[]);
       }
     } catch (error) {
       console.error('Error fetching deals:', error);
@@ -688,96 +705,104 @@ const RootDashboard = () => {
                 {/* All Deals Table */}
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-4">All Deals</h3>
-                  <div className="border border-gray-600 rounded-lg overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-gray-600">
-                          <TableHead className="text-gray-300">Title</TableHead>
-                          <TableHead className="text-gray-300">Status</TableHead>
-                          <TableHead className="text-gray-300">Price</TableHead>
-                          <TableHead className="text-gray-300">Heat</TableHead>
-                          <TableHead className="text-gray-300">Submitted By</TableHead>
-                          <TableHead className="text-gray-300">Created</TableHead>
-                          <TableHead className="text-gray-300">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {deals.map((deal) => (
-                          <TableRow key={deal.id} className="border-gray-600">
-                            <TableCell className="text-white">
-                              <div>
-                                <div className="font-medium">{deal.title}</div>
-                                <div className="text-sm text-gray-400">
-                                  {deal.categories?.name && `${deal.categories.name} • `}
-                                  {deal.shops?.name && deal.shops.name}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={getStatusBadgeVariant(deal.status)}>
-                                {deal.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-white">
-                              {deal.discounted_price && (
-                                <div>
-                                  <div className="font-medium">£{deal.discounted_price}</div>
-                                  {deal.original_price && (
-                                    <div className="text-sm text-gray-400 line-through">
-                                      £{deal.original_price}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-white">{deal.heat_score}°</TableCell>
-                            <TableCell className="text-gray-300">
-                              {deal.profiles?.username || deal.profiles?.full_name || 'Admin'}
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {new Date(deal.created_at).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                {deal.status === 'pending' && (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleDealStatusChange(deal.id, 'approved')}
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => handleDealStatusChange(deal.id, 'rejected')}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => openDealDialog(deal)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeleteDeal(deal.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                  {deals.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-300 mb-2">No deals found</h3>
+                      <p className="text-gray-400">Create your first deal to get started!</p>
+                    </div>
+                  ) : (
+                    <div className="border border-gray-600 rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-gray-600">
+                            <TableHead className="text-gray-300">Title</TableHead>
+                            <TableHead className="text-gray-300">Status</TableHead>
+                            <TableHead className="text-gray-300">Price</TableHead>
+                            <TableHead className="text-gray-300">Heat</TableHead>
+                            <TableHead className="text-gray-300">Submitted By</TableHead>
+                            <TableHead className="text-gray-300">Created</TableHead>
+                            <TableHead className="text-gray-300">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {deals.map((deal) => (
+                            <TableRow key={deal.id} className="border-gray-600">
+                              <TableCell className="text-white">
+                                <div>
+                                  <div className="font-medium">{deal.title}</div>
+                                  <div className="text-sm text-gray-400">
+                                    {deal.categories?.name && `${deal.categories.name} • `}
+                                    {deal.shops?.name && deal.shops.name}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={getStatusBadgeVariant(deal.status)}>
+                                  {deal.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-white">
+                                {deal.discounted_price && (
+                                  <div>
+                                    <div className="font-medium">£{deal.discounted_price}</div>
+                                    {deal.original_price && (
+                                      <div className="text-sm text-gray-400 line-through">
+                                        £{deal.original_price}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-white">{deal.heat_score}°</TableCell>
+                              <TableCell className="text-gray-300">
+                                {deal.profiles?.username || deal.profiles?.full_name || 'Admin'}
+                              </TableCell>
+                              <TableCell className="text-gray-300">
+                                {new Date(deal.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  {deal.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleDealStatusChange(deal.id, 'approved')}
+                                        className="bg-green-600 hover:bg-green-700"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => handleDealStatusChange(deal.id, 'rejected')}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => openDealDialog(deal)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDeleteDeal(deal.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
