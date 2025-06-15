@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -142,6 +141,7 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
 
         const insertPayload: Database['public']['Tables']['deals']['Insert'] = {
           ...values,
+          title: values.title,
           slug: slugData,
           user_id: user?.id ?? null,
           expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
