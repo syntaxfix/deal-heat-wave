@@ -591,6 +591,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_username_exists: {
+        Args: { username_to_check: string }
+        Returns: boolean
+      }
       generate_unique_slug: {
         Args: { title: string; table_name: string }
         Returns: string

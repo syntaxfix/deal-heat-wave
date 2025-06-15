@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,8 @@ import { Link } from 'react-router-dom';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,6 +26,59 @@ export default function Auth() {
     navigate(from, { replace: true });
     return null;
   }
+
+  const validateUsername = async (value: string) => {
+    setUsernameError('');
+    
+    if (!value) {
+      setUsernameError('Username is required');
+      return false;
+    }
+    
+    if (value.includes(' ')) {
+      setUsernameError('Username cannot contain spaces');
+      return false;
+    }
+    
+    if (value.length < 3) {
+      setUsernameError('Username must be at least 3 characters long');
+      return false;
+    }
+    
+    setIsCheckingUsername(true);
+    try {
+      const { data, error } = await supabase.rpc('check_username_exists', {
+        username_to_check: value
+      });
+      
+      if (error) {
+        console.error('Error checking username:', error);
+        return true; // Allow submission if check fails
+      }
+      
+      if (data) {
+        setUsernameError('Username is already taken');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking username:', error);
+      return true; // Allow submission if check fails
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (value) {
+      await validateUsername(value);
+    } else {
+      setUsernameError('');
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -54,15 +110,32 @@ export default function Auth() {
     const fullName = formData.get('fullName') as string;
     const username = formData.get('username') as string;
 
-    const { error } = await signUp(email, password, {
-      full_name: fullName,
-      username: username,
-    });
+    try {
+      // Validate username one more time before submission
+      const isUsernameValid = await validateUsername(username);
+      if (!isUsernameValid) {
+        setIsLoading(false);
+        return;
+      }
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success('Account created! Please check your email to verify your account.');
+      const { error } = await signUp(email, password, {
+        full_name: fullName,
+        username: username,
+      });
+
+      if (error) {
+        if (error.message.includes('Username cannot contain spaces')) {
+          setUsernameError('Username cannot contain spaces');
+        } else if (error.message.includes('Username already exists')) {
+          setUsernameError('Username is already taken');
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        toast.success('Account created! Please check your email to verify your account.');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
     }
     
     setIsLoading(false);
@@ -139,7 +212,15 @@ export default function Auth() {
                       placeholder="Username"
                       required
                       disabled={isLoading}
+                      onChange={handleUsernameChange}
+                      className={usernameError ? 'border-red-500' : ''}
                     />
+                    {isCheckingUsername && (
+                      <p className="text-xs text-gray-500 mt-1">Checking availability...</p>
+                    )}
+                    {usernameError && (
+                      <p className="text-xs text-red-500 mt-1">{usernameError}</p>
+                    )}
                   </div>
                   <div>
                     <Input
@@ -159,7 +240,11 @@ export default function Auth() {
                       disabled={isLoading}
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading || !!usernameError || isCheckingUsername}
+                  >
                     {isLoading ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>

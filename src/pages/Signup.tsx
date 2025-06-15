@@ -19,21 +19,90 @@ const Signup = () => {
   const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  const validateUsername = async (value: string) => {
+    setUsernameError('');
+    
+    if (!value) {
+      setUsernameError('Username is required');
+      return false;
+    }
+    
+    if (value.includes(' ')) {
+      setUsernameError('Username cannot contain spaces');
+      return false;
+    }
+    
+    if (value.length < 3) {
+      setUsernameError('Username must be at least 3 characters long');
+      return false;
+    }
+    
+    setIsCheckingUsername(true);
+    try {
+      const { data, error } = await supabase.rpc('check_username_exists', {
+        username_to_check: value
+      });
+      
+      if (error) {
+        console.error('Error checking username:', error);
+        return true; // Allow submission if check fails
+      }
+      
+      if (data) {
+        setUsernameError('Username is already taken');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking username:', error);
+      return true; // Allow submission if check fails
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+    
+    if (value) {
+      await validateUsername(value);
+    } else {
+      setUsernameError('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // Validate username one more time before submission
+      const isUsernameValid = await validateUsername(username);
+      if (!isUsernameValid) {
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await signUp(email, password, {
         full_name: fullName,
         username: username,
       });
       
       if (error) {
-        toast.error(error.message);
+        if (error.message.includes('Username cannot contain spaces')) {
+          setUsernameError('Username cannot contain spaces');
+        } else if (error.message.includes('Username already exists')) {
+          setUsernameError('Username is already taken');
+        } else {
+          toast.error(error.message);
+        }
       } else {
         toast.success('Account created! Please check your email to confirm your account.');
         navigate('/login');
@@ -97,10 +166,20 @@ const Signup = () => {
                       id="username"
                       type="text"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={handleUsernameChange}
                       required
                       placeholder="johndoe"
+                      className={usernameError ? 'border-red-500' : ''}
                     />
+                    {isCheckingUsername && (
+                      <p className="text-xs text-gray-500 mt-1">Checking availability...</p>
+                    )}
+                    {usernameError && (
+                      <p className="text-xs text-red-500 mt-1">{usernameError}</p>
+                    )}
+                    {username && !usernameError && !isCheckingUsername && (
+                      <p className="text-xs text-green-500 mt-1">Username is available</p>
+                    )}
                   </div>
                 </div>
 
@@ -144,7 +223,11 @@ const Signup = () => {
                   </p>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading || !!usernameError || isCheckingUsername}
+                >
                   {isLoading ? 'Creating account...' : (
                     <>
                       <UserPlus className="h-4 w-4 mr-2" />
