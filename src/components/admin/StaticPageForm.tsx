@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,13 +28,31 @@ export const StaticPageForm = () => {
   const [loading, setLoading] = useState(false);
   const form = useForm<StaticPageFormValues>({
     resolver: zodResolver(staticPageFormSchema),
-    defaultValues: { title: '', content: '', slug: '', is_visible: true },
+    defaultValues: {
+      title: '',
+      content: '',
+      slug: '',
+      is_visible: true,
+      meta_title: '',
+      meta_description: '',
+      meta_keywords: '',
+      canonical_url: '',
+    },
   });
 
   const onSubmit: SubmitHandler<StaticPageFormValues> = async (values) => {
     setLoading(true);
     try {
-      const { error } = await supabase.from('static_pages').insert(values);
+      const { error } = await supabase.from('static_pages').insert({
+        title: values.title,
+        content: values.content,
+        slug: values.slug,
+        is_visible: values.is_visible,
+        meta_title: values.meta_title,
+        meta_description: values.meta_description,
+        meta_keywords: values.meta_keywords,
+        canonical_url: values.canonical_url,
+      });
       if (error) throw error;
 
       toast.success('Static page created successfully!');

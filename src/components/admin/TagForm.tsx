@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,7 +31,7 @@ export const TagForm = () => {
       });
       if (slugError) throw slugError;
 
-      const { error } = await supabase.from('tags').insert({ ...values, slug: slugData });
+      const { error } = await supabase.from('tags').insert({ name: values.name, slug: slugData });
       if (error) throw error;
 
       toast.success('Tag created successfully!');
