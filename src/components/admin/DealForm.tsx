@@ -140,7 +140,7 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
         });
         if (slugError) throw slugError;
 
-        const insertPayload = {
+        const insertPayload: Database['public']['Tables']['deals']['Insert'] = {
           ...values,
           slug: slugData,
           user_id: user?.id ?? null,
