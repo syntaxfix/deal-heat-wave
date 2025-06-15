@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,11 +18,9 @@ export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || '/';
-
   // Redirect if already authenticated
   if (user) {
-    navigate(from, { replace: true });
+    navigate('/profile', { replace: true });
     return null;
   }
 
@@ -94,7 +91,7 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       toast.success('Welcome back!');
-      navigate(from, { replace: true });
+      navigate('/profile', { replace: true });
     }
     
     setIsLoading(false);
