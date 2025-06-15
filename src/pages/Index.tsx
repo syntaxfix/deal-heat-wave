@@ -7,7 +7,7 @@ import FilterBar from '@/components/FilterBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Users, Package, Clock, Star, ArrowRight } from 'lucide-react';
+import { TrendingUp, Users, Package, Clock, Star, ArrowRight, Zap, Gift, Target, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Category {
@@ -116,51 +116,99 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section with Stats */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">
-              Find Amazing Deals
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      {/* Enhanced Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-black/10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%)'
+          }}></div>
+        </div>
+        
+        <div className="relative container mx-auto px-4 py-16 lg:py-24">
+          <div className="text-center mb-12">
+            {/* Trust Badge */}
+            <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <Trophy className="h-4 w-4 text-yellow-300" />
+              <span className="text-white text-sm font-medium">
+                Trusted by {stats.activeUsers}+ deal hunters
+              </span>
+            </div>
+
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
+              Find{' '}
+              <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+                Amazing
+              </span>{' '}
+              Deals
             </h1>
-            <p className="text-xl md:text-2xl mb-8 opacity-90">
-              Discover the hottest deals, voted by our community
+            
+            <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed">
+              Discover hand-picked deals, voted by our community of savvy shoppers. 
+              <span className="text-yellow-300 font-semibold"> Save up to 90% </span>
+              on your favorite products.
             </p>
             
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto">
-              <SearchBar onSearch={handleSearch} placeholder="Search for deals, shops, or products..." />
+            {/* Enhanced Search Bar */}
+            <div className="max-w-2xl mx-auto mb-8">
+              <SearchBar 
+                onSearch={handleSearch} 
+                placeholder="🔍 Search deals, brands, or products..." 
+              />
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+              <Button size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                <Gift className="h-5 w-5 mr-2" />
+                Browse Hot Deals
+              </Button>
+              <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 px-8 py-4 text-lg font-semibold">
+                <Target className="h-5 w-5 mr-2" />
+                Post a Deal
+              </Button>
             </div>
           </div>
 
-          {/* Community Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <Card className="bg-white/10 border-white/20 text-white">
-              <CardContent className="p-4 text-center">
-                <Package className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-2xl font-bold">{stats.totalDeals}</div>
-                <div className="text-sm opacity-80">Total Deals</div>
+          {/* Enhanced Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            <Card className="bg-white/15 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-500/20 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                  <Package className="h-6 w-6" />
+                </div>
+                <div className="text-3xl font-bold mb-1">{stats.totalDeals}</div>
+                <div className="text-sm opacity-80">Active Deals</div>
               </CardContent>
             </Card>
-            <Card className="bg-white/10 border-white/20 text-white">
-              <CardContent className="p-4 text-center">
-                <Clock className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-2xl font-bold">{stats.todaysDeals}</div>
+            
+            <Card className="bg-white/15 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-green-500/20 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                  <Zap className="h-6 w-6" />
+                </div>
+                <div className="text-3xl font-bold mb-1">{stats.todaysDeals}</div>
                 <div className="text-sm opacity-80">Today's Deals</div>
               </CardContent>
             </Card>
-            <Card className="bg-white/10 border-white/20 text-white">
-              <CardContent className="p-4 text-center">
-                <Users className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-2xl font-bold">{stats.activeUsers}</div>
-                <div className="text-sm opacity-80">Active Users</div>
+            
+            <Card className="bg-white/15 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-500/20 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                  <Users className="h-6 w-6" />
+                </div>
+                <div className="text-3xl font-bold mb-1">{stats.activeUsers}</div>
+                <div className="text-sm opacity-80">Happy Users</div>
               </CardContent>
             </Card>
-            <Card className="bg-white/10 border-white/20 text-white">
-              <CardContent className="p-4 text-center">
-                <TrendingUp className="h-8 w-8 mx-auto mb-2" />
-                <div className="text-2xl font-bold">
+            
+            <Card className="bg-white/15 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all duration-300 group">
+              <CardContent className="p-6 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-red-500/20 rounded-full mb-4 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+                <div className="text-3xl font-bold mb-1">
                   {stats.hotDeal?.heat_score || 0}°
                 </div>
                 <div className="text-sm opacity-80">Hottest Deal</div>
@@ -170,79 +218,113 @@ const Index = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content */}
+          {/* Enhanced Main Content */}
           <div className="lg:w-3/4">
-            {/* Categories Section */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 flex items-center">
-                <Star className="h-6 w-6 mr-2 text-yellow-500" />
-                Popular Categories
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Hot Deals Banner */}
+            <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl p-6 mb-8 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2 flex items-center">
+                    🔥 Limited Time Offers
+                  </h2>
+                  <p className="text-red-100">Don't miss out on these incredible deals!</p>
+                </div>
+                <Button className="bg-white text-red-500 hover:bg-red-50 font-semibold">
+                  View All
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Enhanced Categories Section */}
+            <section className="mb-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold mb-4 text-gray-900">
+                  Shop by Category
+                </h2>
+                <p className="text-gray-600 text-lg">
+                  Find deals in your favorite categories
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {categories.map((category) => (
                   <Link
                     key={category.id}
                     to={`/category/${category.slug}`}
                     className="group"
                   >
-                    <Card className="hover:shadow-lg transition-shadow group-hover:border-blue-300">
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl mb-2">{category.icon || '📦'}</div>
-                        <div className="font-semibold text-sm">{category.name}</div>
+                    <Card className="hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:border-blue-300 border-2 border-transparent">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
+                          {category.icon || '📦'}
+                        </div>
+                        <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                          {category.name}
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>
                 ))}
               </div>
-              <div className="text-center mt-4">
+              
+              <div className="text-center mt-8">
                 <Link to="/categories">
-                  <Button variant="outline" className="group">
-                    View All Categories
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <Button size="lg" variant="outline" className="group border-2 hover:border-blue-500 hover:text-blue-600">
+                    Explore All Categories
+                    <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
               </div>
             </section>
 
-            {/* Shops Section */}
-            <section className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 flex items-center">
-                <Package className="h-6 w-6 mr-2 text-green-500" />
-                Featured Shops
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            {/* Enhanced Shops Section */}
+            <section className="mb-12">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold mb-4 text-gray-900">
+                  Top Brands & Stores
+                </h2>
+                <p className="text-gray-600 text-lg">
+                  Shop from your favorite brands
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {shops.map((shop) => (
                   <Link
                     key={shop.id}
                     to={`/shop/${shop.slug}`}
                     className="group"
                   >
-                    <Card className="hover:shadow-lg transition-shadow group-hover:border-green-300">
+                    <Card className="hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:border-green-300 border-2 border-transparent">
                       <CardContent className="p-4 text-center">
                         {shop.logo_url ? (
                           <img
                             src={shop.logo_url}
                             alt={shop.name}
-                            className="w-12 h-12 mx-auto mb-2 object-contain"
+                            className="w-16 h-16 mx-auto mb-3 object-contain group-hover:scale-110 transition-transform"
                           />
                         ) : (
-                          <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded flex items-center justify-center">
-                            {shop.name.charAt(0)}
+                          <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center group-hover:from-blue-100 group-hover:to-blue-200 transition-colors">
+                            <span className="text-xl font-bold text-gray-600">{shop.name.charAt(0)}</span>
                           </div>
                         )}
-                        <div className="font-semibold text-xs truncate">{shop.name}</div>
+                        <div className="font-semibold text-sm text-gray-800 group-hover:text-green-600 transition-colors truncate">
+                          {shop.name}
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>
                 ))}
               </div>
-              <div className="text-center mt-4">
+              
+              <div className="text-center mt-8">
                 <Link to="/shops">
-                  <Button variant="outline" className="group">
-                    View All Shops
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <Button size="lg" variant="outline" className="group border-2 hover:border-green-500 hover:text-green-600">
+                    View All Stores
+                    <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
               </div>
@@ -269,54 +351,59 @@ const Index = () => {
             />
           </div>
 
-          {/* Sidebar */}
+          {/* Enhanced Sidebar */}
           <div className="lg:w-1/4">
             <div className="sticky top-4 space-y-6">
-              {/* Hot Deal of the Day */}
+              {/* Enhanced Hot Deal Card */}
               {stats.hotDeal && (
-                <Card>
-                  <CardHeader>
+                <Card className="border-2 border-red-200 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-t-lg">
                     <CardTitle className="flex items-center text-lg">
-                      <TrendingUp className="h-5 w-5 mr-2 text-red-500" />
-                      🔥 Hot Deal
+                      <TrendingUp className="h-5 w-5 mr-2" />
+                      🔥 Deal of the Day
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-0">
                     <Link to={`/deal/${stats.hotDeal.slug}`} className="block group">
-                      <div className="aspect-video bg-gray-100 rounded mb-3 overflow-hidden">
+                      <div className="aspect-video bg-gray-100 overflow-hidden">
                         {stats.hotDeal.image_url && (
                           <img
                             src={stats.hotDeal.image_url}
                             alt={stats.hotDeal.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           />
                         )}
                       </div>
-                      <h3 className="font-semibold text-sm mb-2 line-clamp-2 group-hover:text-blue-600">
-                        {stats.hotDeal.title}
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        <Badge variant="destructive" className="text-xs">
-                          {stats.hotDeal.heat_score}° Hot
-                        </Badge>
-                        {stats.hotDeal.discount_percentage && (
-                          <Badge variant="secondary" className="text-xs">
-                            -{stats.hotDeal.discount_percentage}%
+                      <div className="p-4">
+                        <h3 className="font-semibold text-sm mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
+                          {stats.hotDeal.title}
+                        </h3>
+                        <div className="flex items-center justify-between mb-3">
+                          <Badge className="bg-red-500 hover:bg-red-600 text-white">
+                            {stats.hotDeal.heat_score}° Hot
                           </Badge>
-                        )}
+                          {stats.hotDeal.discount_percentage && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              -{stats.hotDeal.discount_percentage}% OFF
+                            </Badge>
+                          )}
+                        </div>
+                        <Button className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600">
+                          Get This Deal
+                        </Button>
                       </div>
                     </Link>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Recent Blog Posts */}
+              {/* Enhanced Blog Section */}
               {blogPosts.length > 0 && (
-                <Card>
+                <Card className="shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center text-lg">
                       <Star className="h-5 w-5 mr-2 text-blue-500" />
-                      Latest Articles
+                      Latest Deal Guides
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -326,18 +413,18 @@ const Index = () => {
                         to={`/blog/${post.slug}`}
                         className="block group"
                       >
-                        <div className="flex space-x-3">
-                          <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                        <div className="flex space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="w-20 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                             {post.featured_image && (
                               <img
                                 src={post.featured_image}
                                 alt={post.title}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                               />
                             )}
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-blue-600">
+                            <h4 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
                               {post.title}
                             </h4>
                             <p className="text-xs text-gray-500 line-clamp-2">
@@ -349,8 +436,8 @@ const Index = () => {
                     ))}
                     <div className="text-center pt-2">
                       <Link to="/blog">
-                        <Button variant="outline" size="sm" className="w-full">
-                          View All Articles
+                        <Button variant="outline" size="sm" className="w-full hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300">
+                          Read All Guides
                         </Button>
                       </Link>
                     </div>
@@ -358,17 +445,33 @@ const Index = () => {
                 </Card>
               )}
 
-              {/* Community Guidelines */}
-              <Card>
+              {/* Enhanced Guidelines Card */}
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-lg">Community Guidelines</CardTitle>
+                  <CardTitle className="text-lg text-blue-800">
+                    💡 Deal Hunter Tips
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-gray-600 space-y-2">
-                  <p>• Post genuine deals only</p>
-                  <p>• Check if deal is still active</p>
-                  <p>• Use clear, descriptive titles</p>
-                  <p>• Include original & sale prices</p>
-                  <p>• Be respectful in comments</p>
+                <CardContent className="text-sm text-blue-700 space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Check deal expiry dates</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Compare prices across stores</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Read user reviews first</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span>Vote on deals you like</span>
+                  </div>
+                  <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700" size="sm">
+                    Share a Deal
+                  </Button>
                 </CardContent>
               </Card>
             </div>
