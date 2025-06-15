@@ -95,7 +95,7 @@ export const CouponsAdmin = () => {
       </Dialog>
       
       {isLoading ? (
-          <TableSkeleton rowCount={5} columnCount={7} />
+          <TableSkeleton rows={5} columns={7} />
       ) : (
         <>
             <div className="border rounded-lg">
