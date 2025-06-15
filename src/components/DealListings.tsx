@@ -39,6 +39,7 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    console.log('DealListings - Fetching deals with params:', { categorySlug, shopSlug, sortBy, searchQuery });
     fetchDeals(true);
   }, [categorySlug, shopSlug, sortBy, searchQuery]);
 
@@ -59,7 +60,8 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
       .eq('status', 'approved');
 
     // Apply filters
-    if (categorySlug) {
+    if (categorySlug && categorySlug !== 'all' && categorySlug !== '') {
+      console.log('Filtering by category slug:', categorySlug);
       // Get category ID first
       const { data: categoryData } = await supabase
         .from('categories')
@@ -68,11 +70,15 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
         .single();
       
       if (categoryData) {
+        console.log('Found category ID:', categoryData.id);
         query = query.eq('category_id', categoryData.id);
+      } else {
+        console.log('Category not found for slug:', categorySlug);
       }
     }
     
-    if (shopSlug) {
+    if (shopSlug && shopSlug !== 'all' && shopSlug !== '') {
+      console.log('Filtering by shop slug:', shopSlug);
       // Get shop ID first
       const { data: shopData } = await supabase
         .from('shops')
@@ -81,7 +87,10 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
         .single();
       
       if (shopData) {
+        console.log('Found shop ID:', shopData.id);
         query = query.eq('shop_id', shopData.id);
+      } else {
+        console.log('Shop not found for slug:', shopSlug);
       }
     }
     
@@ -118,6 +127,7 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
     if (error) {
       console.error('Error fetching deals:', error);
     } else {
+      console.log('Fetched deals:', data?.length || 0);
       const mappedDeals = (data || []).map(deal => ({
         ...deal,
         summary: deal.description || ''
@@ -172,7 +182,9 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
           <p className="text-gray-600">
             {searchQuery 
               ? `No deals found for "${searchQuery}"`
-              : "Check back soon for amazing deals and discounts!"
+              : categorySlug 
+                ? `No deals found in this category. Check back soon for amazing deals!`
+                : "Check back soon for amazing deals and discounts!"
             }
           </p>
         </CardContent>

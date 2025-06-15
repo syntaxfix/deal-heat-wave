@@ -45,6 +45,8 @@ function App() {
             <div className="min-h-screen flex flex-col">
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/deals" element={<AllDeals />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
-import DealCard from '@/components/DealCard';
+import DealListings from '@/components/DealListings';
 import FilterBar from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,30 +17,12 @@ interface Category {
   icon: string;
 }
 
-interface Deal {
-  id: string;
-  title: string;
-  description: string;
-  summary?: string;
-  image_url: string;
-  original_price: number;
-  discounted_price: number;
-  discount_percentage: number;
-  heat_score: number;
-  upvotes: number;
-  downvotes: number;
-  created_at: string;
-  affiliate_link: string;
-  slug?: string;
-  shops: { name: string; slug: string; logo_url: string };
-}
-
 const Category = () => {
   const { slug } = useParams<{ slug: string }>();
   const [category, setCategory] = useState<Category | null>(null);
-  const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
+  const [selectedShop, setSelectedShop] = useState('');
   const [categories, setCategories] = useState([]);
   const [shops, setShops] = useState([]);
 
@@ -48,7 +30,7 @@ const Category = () => {
     if (slug) {
       fetchCategoryData();
     }
-  }, [slug, sortBy]);
+  }, [slug]);
 
   useEffect(() => {
     fetchFiltersData();
@@ -88,52 +70,6 @@ const Category = () => {
     }
 
     setCategory(categoryData);
-
-    // Fetch deals for this category
-    let query = supabase
-      .from('deals')
-      .select(`
-        *,
-        shops:shop_id (name, slug, logo_url)
-      `)
-      .eq('category_id', categoryData.id)
-      .eq('status', 'approved');
-
-    // Apply sorting
-    switch (sortBy) {
-      case 'hot':
-        query = query.order('heat_score', { ascending: false });
-        break;
-      case 'newest':
-        query = query.order('created_at', { ascending: false });
-        break;
-      case 'discount':
-        query = query.order('discount_percentage', { ascending: false });
-        break;
-      case 'price_low':
-        query = query.order('discounted_price', { ascending: true });
-        break;
-      case 'price_high':
-        query = query.order('discounted_price', { ascending: false });
-        break;
-      default:
-        query = query.order('created_at', { ascending: false });
-    }
-
-    const { data: dealsData, error: dealsError } = await query;
-
-    if (!dealsError && dealsData) {
-      // Transform the data to match the expected Deal interface
-      const transformedDeals = dealsData.map(deal => ({
-        ...deal,
-        categories: { name: categoryData.name, slug: categoryData.slug }
-      }));
-      setDeals(transformedDeals);
-    } else {
-      console.error('Error fetching deals:', dealsError);
-      setDeals([]);
-    }
-
     setLoading(false);
   };
 
@@ -206,42 +142,25 @@ const Category = () => {
             {category.description && (
               <p className="text-gray-600">{category.description}</p>
             )}
-            <p className="text-sm text-gray-500 mt-2">
-              {deals.length} deals found
-            </p>
           </div>
 
           <FilterBar 
             categories={categories}
             shops={shops}
             selectedCategory={slug || ''}
-            selectedShop=""
+            selectedShop={selectedShop}
             sortBy={sortBy}
             onCategoryChange={() => {}} // Disabled in category page
-            onShopChange={() => {}} // Could be enabled to filter by shop within category
+            onShopChange={setSelectedShop}
             onSortChange={setSortBy}
           />
 
-          {deals.length === 0 && !loading ? (
-            <div className="text-center py-12">
-              <Tag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                No deals found in {category.name}
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Be the first to post a deal in this category!
-              </p>
-              <Button asChild>
-                <Link to="/post-deal">Post a Deal</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {deals.map((deal) => (
-                <DealCard key={deal.id} deal={deal} />
-              ))}
-            </div>
-          )}
+          {/* Deal Listings */}
+          <DealListings
+            categorySlug={slug}
+            shopSlug={selectedShop}
+            sortBy={sortBy}
+          />
         </div>
       </div>
     </div>
