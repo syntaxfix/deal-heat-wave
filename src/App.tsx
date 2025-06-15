@@ -31,6 +31,7 @@ import NotFound from "./pages/NotFound";
 import CookieConsent from "./components/CookieConsent";
 import Footer from "./components/Footer";
 import ResetPassword from "@/pages/ResetPassword";
+import RootAdminRoute from "@/components/auth/RootAdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +52,11 @@ function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/root/login" element={<RootLogin />} />
-                <Route path="/root/dashboard" element={<RootDashboard />} />
+                
+                <Route element={<RootAdminRoute />}>
+                  <Route path="/root/dashboard" element={<RootDashboard />} />
+                </Route>
+                
                 <Route path="/deal/:slug" element={<DealDetail />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
