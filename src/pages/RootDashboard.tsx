@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -60,6 +61,7 @@ interface Deal {
   downvotes: number;
   heat_score: number;
   expires_at?: string;
+  slug?: string;
   categories?: { id: string; name: string };
   shops?: { id: string; name: string };
   profiles?: { username?: string; full_name?: string };
@@ -407,7 +409,7 @@ const RootDashboard = () => {
 
       const discountPercentage = calculateDiscount();
       const baseSlug = generateSlugFromTitle(dealForm.title);
-      const uniqueSlug = editingDeal ? editingDeal.slug || `${baseSlug}-${Date.now()}` : `${baseSlug}-${Date.now()}`;
+      const uniqueSlug = editingDeal?.slug || `${baseSlug}-${Date.now()}`;
 
       const dealData = {
         title: dealForm.title.trim(),
@@ -422,7 +424,7 @@ const RootDashboard = () => {
         expires_at: dealForm.expires_at || null,
         status: dealForm.status,
         slug: uniqueSlug,
-        user_id: editingDeal?.profiles ? null : user?.id // Only set user_id for new deals
+        user_id: editingDeal?.profiles ? null : user?.id
       };
 
       let error;
