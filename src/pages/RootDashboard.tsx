@@ -974,8 +974,12 @@ const RootDashboard = () => {
                       alt="Deal preview"
                       className="w-full h-32 object-cover"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling.style.display = 'block';
+                        const target = e.currentTarget as HTMLImageElement;
+                        const errorDiv = target.nextElementSibling as HTMLDivElement;
+                        target.style.display = 'none';
+                        if (errorDiv) {
+                          errorDiv.style.display = 'block';
+                        }
                       }}
                     />
                     <div className="hidden p-4 text-center text-gray-400 text-sm">
