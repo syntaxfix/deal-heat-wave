@@ -22,6 +22,8 @@ import {
   ThumbsUp,
   MessageSquare
 } from 'lucide-react';
+import { useCurrencySetting } from '@/hooks/useCurrencySetting';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Deal {
   id: string;
@@ -60,6 +62,7 @@ const DealDetail = () => {
   const [dealAuthor, setDealAuthor] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedDeals, setRelatedDeals] = useState<Deal[]>([]);
+  const { data: currency, isLoading: isCurrencyLoading } = useCurrencySetting();
 
   useEffect(() => {
     if (slug) {
@@ -309,20 +312,27 @@ const DealDetail = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                       <div className="mb-4 sm:mb-0">
                         <div className="flex items-center space-x-3 mb-2">
-                          {deal.original_price && deal.discounted_price && (
+                          {isCurrencyLoading ? (
                             <>
-                              <span className="text-2xl font-bold text-green-600">
-                                £{deal.discounted_price.toFixed(2)}
-                              </span>
-                              <span className="text-lg text-gray-500 line-through">
-                                £{deal.original_price.toFixed(2)}
-                              </span>
-                              {deal.discount_percentage && (
-                                <Badge variant="destructive" className="text-sm">
-                                  -{deal.discount_percentage}% OFF
-                                </Badge>
-                              )}
+                              <Skeleton className="h-8 w-24" />
+                              <Skeleton className="h-6 w-20" />
                             </>
+                          ) : (
+                            deal.original_price && deal.discounted_price && (
+                              <>
+                                <span className="text-2xl font-bold text-green-600">
+                                  {currency?.symbol}{deal.discounted_price.toFixed(2)}
+                                </span>
+                                <span className="text-lg text-gray-500 line-through">
+                                  {currency?.symbol}{deal.original_price.toFixed(2)}
+                                </span>
+                                {deal.discount_percentage && (
+                                  <Badge variant="destructive" className="text-sm">
+                                    -{deal.discount_percentage}% OFF
+                                  </Badge>
+                                )}
+                              </>
+                            )
                           )}
                         </div>
                         {deal.expires_at && (
