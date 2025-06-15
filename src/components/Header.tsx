@@ -55,6 +55,9 @@ const Header = () => {
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/" className="text-gray-600 hover:text-gray-900 font-medium">
+              Home
+            </Link>
+            <Link to="/deals" className="text-gray-600 hover:text-gray-900 font-medium">
               Deals
             </Link>
             <Link to="/shops" className="text-gray-600 hover:text-gray-900 font-medium">

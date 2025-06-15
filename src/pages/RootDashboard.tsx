@@ -389,13 +389,30 @@ const RootDashboard = () => {
         affiliate_link: deal.affiliate_link || '',
         category_id: deal.categories?.id || '',
         shop_id: deal.shops?.id || '',
-        expires_at: deal.expires_at ? new Date(deal.expires_at).toISOString().slice(0, 16) : '',
+        expires_at: deal.expires_at ? formatDateForInput(deal.expires_at) : '',
         status: deal.status
       });
     } else {
       resetDealForm();
     }
     setShowDealDialog(true);
+  };
+
+  const formatDateForInput = (date: string | null) => {
+    if (!date) return '';
+    // Convert to local date and set time to midnight (00:00)
+    const localDate = new Date(date);
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}T00:00`;
+  };
+
+  const convertDateToUTC = (dateString: string) => {
+    if (!dateString) return null;
+    // If only date is provided (no time), add midnight
+    const dateWithTime = dateString.includes('T') ? dateString : `${dateString}T00:00`;
+    return new Date(dateWithTime).toISOString();
   };
 
   const generateSlugFromTitle = (title: string) => {
@@ -438,7 +455,7 @@ const RootDashboard = () => {
         affiliate_link: dealForm.affiliate_link.trim() || null,
         category_id: dealForm.category_id || null,
         shop_id: dealForm.shop_id || null,
-        expires_at: dealForm.expires_at || null,
+        expires_at: dealForm.expires_at ? convertDateToUTC(dealForm.expires_at) : null,
         status: dealForm.status,
         slug: uniqueSlug,
         user_id: editingDeal?.profiles ? null : user?.id
@@ -938,7 +955,7 @@ const RootDashboard = () => {
               />
             </div>
 
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="image_url">Image URL</Label>
               <Input
                 id="image_url"
@@ -947,6 +964,26 @@ const RootDashboard = () => {
                 className="bg-gray-700 border-gray-600"
                 placeholder="https://example.com/image.jpg"
               />
+              {/* Image Preview */}
+              {dealForm.image_url && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-400 mb-2">Image Preview:</p>
+                  <div className="border border-gray-600 rounded-lg overflow-hidden max-w-xs">
+                    <img
+                      src={dealForm.image_url}
+                      alt="Deal preview"
+                      className="w-full h-32 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling.style.display = 'block';
+                      }}
+                    />
+                    <div className="hidden p-4 text-center text-gray-400 text-sm">
+                      Invalid image URL or image failed to load
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1028,14 +1065,20 @@ const RootDashboard = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="expires_at">Expires At</Label>
+                <Label htmlFor="expires_at">Expires At (Optional)</Label>
                 <Input
                   id="expires_at"
-                  type="datetime-local"
-                  value={dealForm.expires_at}
-                  onChange={(e) => setDealForm({...dealForm, expires_at: e.target.value})}
+                  type="date"
+                  value={dealForm.expires_at.split('T')[0]}
+                  onChange={(e) => {
+                    const dateValue = e.target.value;
+                    setDealForm({...dealForm, expires_at: dateValue ? `${dateValue}T00:00` : ''});
+                  }}
                   className="bg-gray-700 border-gray-600"
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  Time will be set to midnight if date is selected
+                </p>
               </div>
               <div>
                 <Label>Status</Label>
