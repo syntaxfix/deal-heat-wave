@@ -26,6 +26,7 @@ export const useCurrencySetting = () => {
     return useQuery({
         queryKey: ['system_settings', 'currency'],
         queryFn: fetchCurrencySetting,
-        staleTime: Infinity, // This will be invalidated manually from admin settings
+        // staleTime: Infinity was causing issues with stale data after updates in admin.
+        // Removing it allows react-query to refetch the currency setting more reliably across the app.
     });
 }
