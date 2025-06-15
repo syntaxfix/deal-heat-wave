@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -108,9 +109,20 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
     setLoading(true);
     try {
       if (isEditMode && initialData) {
+        let slug = initialData.slug;
+        if (values.title && values.title !== initialData.title) {
+          const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
+            title: values.title,
+            table_name: 'deals',
+          });
+          if (slugError) throw slugError;
+          slug = slugData;
+        }
+
         const updatePayload = {
           ...values,
-          user_id: user?.id,
+          slug,
+          updated_at: new Date().toISOString(),
           expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
         };
 
@@ -128,10 +140,8 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
         });
         if (slugError) throw slugError;
 
-        const { title, ...restOfValues } = values;
         const insertPayload = {
-          title,
-          ...restOfValues,
+          ...values,
           slug: slugData,
           user_id: user?.id ?? null,
           expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
@@ -143,6 +153,7 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
         toast.success('Deal created successfully!');
       }
       queryClient.invalidateQueries({ queryKey: ['deals'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCounts'] });
       if (onSuccess) onSuccess();
     } catch (error: any) {
       console.error('Error saving deal:', error);

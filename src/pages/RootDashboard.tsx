@@ -15,6 +15,8 @@ import { DashboardOverview } from "@/components/admin/DashboardOverview";
 import { SettingsAdmin } from "@/components/admin/SettingsAdmin";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
+import { ShopsAdmin } from "@/components/admin/ShopsAdmin";
+import { BlogPostsAdmin } from "@/components/admin/BlogPostsAdmin";
 
 const RootDashboard = () => {
   return (
@@ -59,7 +61,7 @@ const RootDashboard = () => {
                 Full management for Shops is not yet available as some required files are not editable. You can view existing shops, but create and edit functionality is disabled.
               </AlertDescription>
             </Alert>
-            <div className="p-4 text-center text-muted-foreground">Shop management coming soon.</div>
+            <ShopsAdmin />
           </TabsContent>
 
           <TabsContent value="blog">
@@ -70,7 +72,7 @@ const RootDashboard = () => {
                 Full management for Blog Posts is not yet available as some required files are not editable. You can view existing posts, but create and edit functionality is disabled.
               </AlertDescription>
             </Alert>
-             <div className="p-4 text-center text-muted-foreground">Blog post management coming soon.</div>
+            <BlogPostsAdmin />
           </TabsContent>
 
           <TabsContent value="static-pages">
