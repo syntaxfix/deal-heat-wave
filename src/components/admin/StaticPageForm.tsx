@@ -80,7 +80,16 @@ export const StaticPageForm = ({ initialData, onSuccess }: StaticPageFormProps) 
         if (error) throw error;
         toast.success('Static page updated successfully!');
       } else {
-        const { error } = await supabase.from('static_pages').insert(values);
+        const { error } = await supabase.from('static_pages').insert({
+          title: values.title,
+          slug: values.slug,
+          content: values.content,
+          is_visible: values.is_visible,
+          meta_title: values.meta_title,
+          meta_description: values.meta_description,
+          meta_keywords: values.meta_keywords,
+          canonical_url: values.canonical_url,
+        });
         if (error) throw error;
         toast.success('Static page created successfully!');
       }

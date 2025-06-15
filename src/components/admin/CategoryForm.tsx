@@ -67,9 +67,15 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
         });
         if (slugError) throw slugError;
 
-        const { error } = await supabase.from('categories').insert({ 
-          ...values,
-          slug: slugData
+        const { error } = await supabase.from('categories').insert({
+          name: values.name,
+          slug: slugData,
+          description: values.description,
+          icon: values.icon,
+          meta_title: values.meta_title,
+          meta_description: values.meta_description,
+          meta_keywords: values.meta_keywords,
+          canonical_url: values.canonical_url,
         });
         if (error) throw error;
         toast.success('Category created successfully!');
