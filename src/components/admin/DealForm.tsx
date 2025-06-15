@@ -128,8 +128,10 @@ export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
         });
         if (slugError) throw slugError;
 
+        const { title, ...restOfValues } = values;
         const insertPayload = {
-          ...values,
+          title,
+          ...restOfValues,
           slug: slugData,
           user_id: user?.id ?? null,
           expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
