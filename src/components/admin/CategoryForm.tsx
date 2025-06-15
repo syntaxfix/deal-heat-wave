@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -94,7 +93,7 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <FormField
           control={form.control}
           name="name"
@@ -102,17 +101,6 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl><Input placeholder="Category Name" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl><Textarea placeholder="Category description" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -128,7 +116,20 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
             </FormItem>
           )}
         />
-         <h3 className="text-lg font-medium pt-4">SEO</h3>
+        <div className="md:col-span-2">
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl><Textarea placeholder="Category description" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+         <h3 className="text-lg font-medium pt-4 md:col-span-2">SEO</h3>
         <FormField
           control={form.control}
           name="meta_title"
@@ -137,19 +138,6 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
               <FormLabel>Meta Title</FormLabel>
               <FormControl>
                 <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="meta_description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Meta Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -168,23 +156,42 @@ export const CategoryForm = ({ initialData, onSuccess }: CategoryFormProps) => {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="canonical_url"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Canonical URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {isEditMode ? 'Update Category' : 'Create Category'}
-        </Button>
+        <div className="md:col-span-2">
+          <FormField
+            control={form.control}
+            name="meta_description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Meta Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <FormField
+            control={form.control}
+            name="canonical_url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Canonical URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <Button type="submit" disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isEditMode ? 'Update Category' : 'Create Category'}
+          </Button>
+        </div>
       </form>
     </Form>
   );

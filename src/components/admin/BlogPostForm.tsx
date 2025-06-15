@@ -139,46 +139,52 @@ export const BlogPostForm = ({ initialData, onSuccess }: BlogPostFormProps) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Blog Post Title" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="content"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Content</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Blog post content (Markdown supported)" rows={10} {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="summary"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Summary</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Short summary of the post" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="md:col-span-2">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="Blog Post Title" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <FormField
+            control={form.control}
+            name="content"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Content</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Blog post content (Markdown supported)" rows={10} {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <FormField
+            control={form.control}
+            name="summary"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Summary</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Short summary of the post" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name="category"
@@ -205,20 +211,22 @@ export const BlogPostForm = ({ initialData, onSuccess }: BlogPostFormProps) => {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="featured_image"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Featured Image URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/image.png" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="space-y-2">
+        <div className="md:col-span-2">
+            <FormField
+            control={form.control}
+            name="featured_image"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Featured Image URL</FormLabel>
+                <FormControl>
+                    <Input placeholder="https://example.com/image.png" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+        <div className="md:col-span-2 space-y-2">
             <FormLabel>Or Upload Featured Image</FormLabel>
             <ImageUpload
               bucket="images"
@@ -226,27 +234,29 @@ export const BlogPostForm = ({ initialData, onSuccess }: BlogPostFormProps) => {
             />
         </div>
         
-        <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="published">Published</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-        />
+        <div className="md:col-span-2">
+            <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        </div>
 
-        <h3 className="text-lg font-medium pt-4">SEO</h3>
+        <h3 className="text-lg font-medium pt-4 md:col-span-2">SEO</h3>
         <FormField
           control={form.control}
           name="meta_title"
@@ -255,19 +265,6 @@ export const BlogPostForm = ({ initialData, onSuccess }: BlogPostFormProps) => {
               <FormLabel>Meta Title</FormLabel>
               <FormControl>
                 <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="meta_description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Meta Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -286,23 +283,42 @@ export const BlogPostForm = ({ initialData, onSuccess }: BlogPostFormProps) => {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="canonical_url"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Canonical URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {isEditMode ? 'Update Blog Post' : 'Create Blog Post'}
-        </Button>
+        <div className="md:col-span-2">
+            <FormField
+            control={form.control}
+            name="meta_description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Meta Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+            />
+        </div>
+        <div className="md:col-span-2">
+            <FormField
+            control={form.control}
+            name="canonical_url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Canonical URL</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+            />
+        </div>
+        <div className="md:col-span-2">
+          <Button type="submit" disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isEditMode ? 'Update Blog Post' : 'Create Blog Post'}
+          </Button>
+        </div>
       </form>
     </Form>
   );
