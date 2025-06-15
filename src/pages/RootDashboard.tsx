@@ -6,6 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { toast } from 'sonner';
 import { 
   Shield, 
@@ -35,14 +48,21 @@ interface DashboardStats {
 interface Deal {
   id: string;
   title: string;
+  description?: string;
+  image_url?: string;
+  original_price?: number;
+  discounted_price?: number;
+  discount_percentage?: number;
+  affiliate_link?: string;
   status: string;
   created_at: string;
   upvotes: number;
   downvotes: number;
   heat_score: number;
-  categories?: { name: string };
-  shops?: { name: string };
-  profiles?: { username?: string };
+  expires_at?: string;
+  categories?: { id: string; name: string };
+  shops?: { id: string; name: string };
+  profiles?: { username?: string; full_name?: string };
 }
 
 interface Shop {
@@ -53,6 +73,12 @@ interface Shop {
   logo_url?: string;
   website_url?: string;
   created_at: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 interface BlogPost {
@@ -103,9 +129,26 @@ const RootDashboard = () => {
   // Data states
   const [deals, setDeals] = useState<Deal[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [staticPages, setStaticPages] = useState<StaticPage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+
+  // Deal form states
+  const [showDealDialog, setShowDealDialog] = useState(false);
+  const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
+  const [dealForm, setDealForm] = useState({
+    title: '',
+    description: '',
+    image_url: '',
+    original_price: '',
+    discounted_price: '',
+    affiliate_link: '',
+    category_id: '',
+    shop_id: '',
+    expires_at: '',
+    status: 'approved'
+  });
 
   useEffect(() => {
     if (user) {
@@ -170,7 +213,11 @@ const RootDashboard = () => {
       });
 
       // Fetch initial data for active tab
-      if (activeTab === 'deals') fetchDeals();
+      if (activeTab === 'deals') {
+        fetchDeals();
+        fetchCategories();
+        fetchShops();
+      }
       else if (activeTab === 'shops') fetchShops();
       else if (activeTab === 'blogs') fetchBlogPosts();
       else if (activeTab === 'pages') fetchStaticPages();
@@ -188,12 +235,11 @@ const RootDashboard = () => {
         .from('deals')
         .select(`
           *,
-          categories(name),
-          shops(name),
-          profiles(username)
+          categories(id, name),
+          shops(id, name),
+          profiles(username, full_name)
         `)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('Error fetching deals:', error);
@@ -206,6 +252,15 @@ const RootDashboard = () => {
     } catch (error) {
       console.error('Error fetching deals:', error);
     }
+  };
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('id, name, slug')
+      .order('name');
+    
+    if (data) setCategories(data);
   };
 
   const fetchShops = async () => {
@@ -242,10 +297,9 @@ const RootDashboard = () => {
       .order('created_at', { ascending: false });
     
     if (data) {
-      // Transform data to match expected format
       const transformedUsers = data.map(profile => ({
         id: profile.id,
-        email: '', // We don't have access to auth.users email here
+        email: '',
         created_at: profile.created_at || '',
         profiles: {
           username: profile.username,
@@ -259,8 +313,11 @@ const RootDashboard = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Fetch data for the selected tab
-    if (value === 'deals') fetchDeals();
+    if (value === 'deals') {
+      fetchDeals();
+      fetchCategories();
+      fetchShops();
+    }
     else if (value === 'shops') fetchShops();
     else if (value === 'blogs') fetchBlogPosts();
     else if (value === 'pages') fetchStaticPages();
@@ -285,29 +342,138 @@ const RootDashboard = () => {
     }
   };
 
-  const handleDeleteItem = async (table: string, id: string, itemName: string) => {
-    if (!confirm(`Are you sure you want to delete this ${itemName}?`)) return;
+  const resetDealForm = () => {
+    setDealForm({
+      title: '',
+      description: '',
+      image_url: '',
+      original_price: '',
+      discounted_price: '',
+      affiliate_link: '',
+      category_id: '',
+      shop_id: '',
+      expires_at: '',
+      status: 'approved'
+    });
+    setEditingDeal(null);
+  };
 
+  const openDealDialog = (deal?: Deal) => {
+    if (deal) {
+      setEditingDeal(deal);
+      setDealForm({
+        title: deal.title,
+        description: deal.description || '',
+        image_url: deal.image_url || '',
+        original_price: deal.original_price?.toString() || '',
+        discounted_price: deal.discounted_price?.toString() || '',
+        affiliate_link: deal.affiliate_link || '',
+        category_id: deal.categories?.id || '',
+        shop_id: deal.shops?.id || '',
+        expires_at: deal.expires_at ? new Date(deal.expires_at).toISOString().slice(0, 16) : '',
+        status: deal.status
+      });
+    } else {
+      resetDealForm();
+    }
+    setShowDealDialog(true);
+  };
+
+  const generateSlugFromTitle = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const calculateDiscount = () => {
+    const original = parseFloat(dealForm.original_price);
+    const discounted = parseFloat(dealForm.discounted_price);
+    
+    if (original && discounted && original > discounted) {
+      return Math.round(((original - discounted) / original) * 100);
+    }
+    return 0;
+  };
+
+  const handleSaveDeal = async () => {
     try {
-      const { error } = await supabase
-        .from(table as any)
-        .delete()
-        .eq('id', id);
+      if (!dealForm.title.trim()) {
+        toast.error('Deal title is required');
+        return;
+      }
+
+      const discountPercentage = calculateDiscount();
+      const baseSlug = generateSlugFromTitle(dealForm.title);
+      const uniqueSlug = editingDeal ? editingDeal.slug || `${baseSlug}-${Date.now()}` : `${baseSlug}-${Date.now()}`;
+
+      const dealData = {
+        title: dealForm.title.trim(),
+        description: dealForm.description.trim() || null,
+        image_url: dealForm.image_url.trim() || null,
+        original_price: dealForm.original_price ? parseFloat(dealForm.original_price) : null,
+        discounted_price: dealForm.discounted_price ? parseFloat(dealForm.discounted_price) : null,
+        discount_percentage: discountPercentage > 0 ? discountPercentage : null,
+        affiliate_link: dealForm.affiliate_link.trim() || null,
+        category_id: dealForm.category_id || null,
+        shop_id: dealForm.shop_id || null,
+        expires_at: dealForm.expires_at || null,
+        status: dealForm.status,
+        slug: uniqueSlug,
+        user_id: editingDeal?.profiles ? null : user?.id // Only set user_id for new deals
+      };
+
+      let error;
+      if (editingDeal) {
+        ({ error } = await supabase
+          .from('deals')
+          .update(dealData)
+          .eq('id', editingDeal.id));
+      } else {
+        ({ error } = await supabase
+          .from('deals')
+          .insert({
+            ...dealData,
+            heat_score: 0,
+            upvotes: 0,
+            downvotes: 0,
+            views: 0,
+            user_id: user?.id
+          }));
+      }
 
       if (error) throw error;
 
-      toast.success(`${itemName} deleted successfully`);
-      
-      // Refresh the appropriate data
-      if (table === 'deals') fetchDeals();
-      else if (table === 'shops') fetchShops();
-      else if (table === 'blog_posts') fetchBlogPosts();
-      else if (table === 'static_pages') fetchStaticPages();
-      
+      toast.success(`Deal ${editingDeal ? 'updated' : 'created'} successfully`);
+      setShowDealDialog(false);
+      resetDealForm();
+      fetchDeals();
       fetchDashboardStats();
     } catch (error) {
-      console.error(`Error deleting ${itemName}:`, error);
-      toast.error(`Failed to delete ${itemName}`);
+      console.error('Error saving deal:', error);
+      toast.error(`Failed to ${editingDeal ? 'update' : 'create'} deal`);
+    }
+  };
+
+  const handleDeleteDeal = async (dealId: string) => {
+    if (!confirm('Are you sure you want to delete this deal?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('deals')
+        .delete()
+        .eq('id', dealId);
+
+      if (error) throw error;
+
+      toast.success('Deal deleted successfully');
+      fetchDeals();
+      fetchDashboardStats();
+    } catch (error) {
+      console.error('Error deleting deal:', error);
+      toast.error('Failed to delete deal');
     }
   };
 
@@ -315,6 +481,19 @@ const RootDashboard = () => {
     await supabase.auth.signOut();
     navigate('/root/login');
   };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'approved': return 'default';
+      case 'pending': return 'secondary';
+      case 'rejected': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
+  const pendingDeals = deals.filter(deal => deal.status === 'pending');
+  const approvedDeals = deals.filter(deal => deal.status === 'approved');
+  const rejectedDeals = deals.filter(deal => deal.status === 'rejected');
 
   if (!userProfile || userProfile.role !== 'root_admin') {
     return (
@@ -413,7 +592,7 @@ const RootDashboard = () => {
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid grid-cols-2 lg:grid-cols-6 bg-gray-800 border-gray-700">
             <TabsTrigger value="deals" className="data-[state=active]:bg-gray-700">
-              Deals ({stats.pendingDeals})
+              Deals ({stats.totalDeals})
             </TabsTrigger>
             <TabsTrigger value="shops" className="data-[state=active]:bg-gray-700">
               Shops ({stats.totalShops})
@@ -432,7 +611,7 @@ const RootDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Deals Management */}
+          {/* Enhanced Deals Management */}
           <TabsContent value="deals">
             <Card className="border-gray-700 bg-gray-800">
               <CardHeader>
@@ -440,60 +619,163 @@ const RootDashboard = () => {
                   <div>
                     <CardTitle className="text-white">Deal Management</CardTitle>
                     <CardDescription className="text-gray-400">
-                      Manage deal submissions, approvals, and moderation
+                      Manage deals, approve submissions, and moderate content
                     </CardDescription>
                   </div>
-                  <Button onClick={() => navigate('/post-deal')}>
+                  <Button onClick={() => openDealDialog()}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Deal
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {deals.map((deal) => (
-                    <div key={deal.id} className="flex items-center justify-between p-4 border border-gray-600 rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-white">{deal.title}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-400 mt-1">
-                          <span>By: {deal.profiles?.username || 'Unknown'}</span>
-                          <span>Category: {deal.categories?.name || 'None'}</span>
-                          <span>Shop: {deal.shops?.name || 'None'}</span>
-                          <span>Heat: {deal.heat_score}°</span>
+                {/* Pending Approvals Section */}
+                {pendingDeals.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-yellow-400 mb-4">
+                      ⏳ Pending Approvals ({pendingDeals.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {pendingDeals.map((deal) => (
+                        <div key={deal.id} className="border border-yellow-600 bg-yellow-500/5 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-white">{deal.title}</h4>
+                              <div className="flex items-center space-x-4 text-sm text-gray-400 mt-1">
+                                <span>By: {deal.profiles?.username || deal.profiles?.full_name || 'Unknown'}</span>
+                                <span>Category: {deal.categories?.name || 'None'}</span>
+                                <span>Shop: {deal.shops?.name || 'None'}</span>
+                                <span>Heat: {deal.heat_score}°</span>
+                              </div>
+                              {deal.description && (
+                                <p className="text-gray-300 text-sm mt-2">{deal.description.slice(0, 100)}...</p>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleDealStatusChange(deal.id, 'approved')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDealStatusChange(deal.id, 'rejected')}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openDealDialog(deal)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={deal.status === 'approved' ? 'default' : deal.status === 'pending' ? 'secondary' : 'destructive'}>
-                          {deal.status}
-                        </Badge>
-                        {deal.status === 'pending' && (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => handleDealStatusChange(deal.id, 'approved')}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDealStatusChange(deal.id, 'rejected')}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteItem('deals', deal.id, 'deal')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                {/* All Deals Table */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4">All Deals</h3>
+                  <div className="border border-gray-600 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-600">
+                          <TableHead className="text-gray-300">Title</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Price</TableHead>
+                          <TableHead className="text-gray-300">Heat</TableHead>
+                          <TableHead className="text-gray-300">Submitted By</TableHead>
+                          <TableHead className="text-gray-300">Created</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {deals.map((deal) => (
+                          <TableRow key={deal.id} className="border-gray-600">
+                            <TableCell className="text-white">
+                              <div>
+                                <div className="font-medium">{deal.title}</div>
+                                <div className="text-sm text-gray-400">
+                                  {deal.categories?.name && `${deal.categories.name} • `}
+                                  {deal.shops?.name && deal.shops.name}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusBadgeVariant(deal.status)}>
+                                {deal.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-white">
+                              {deal.discounted_price && (
+                                <div>
+                                  <div className="font-medium">£{deal.discounted_price}</div>
+                                  {deal.original_price && (
+                                    <div className="text-sm text-gray-400 line-through">
+                                      £{deal.original_price}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-white">{deal.heat_score}°</TableCell>
+                            <TableCell className="text-gray-300">
+                              {deal.profiles?.username || deal.profiles?.full_name || 'Admin'}
+                            </TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(deal.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                {deal.status === 'pending' && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleDealStatusChange(deal.id, 'approved')}
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleDealStatusChange(deal.id, 'rejected')}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openDealDialog(deal)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteDeal(deal.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -594,6 +876,166 @@ const RootDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Deal Form Dialog */}
+      <Dialog open={showDealDialog} onOpenChange={setShowDealDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingDeal ? 'Edit Deal' : 'Create New Deal'}</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {editingDeal ? 'Update deal information' : 'Add a new deal to the platform'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div>
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={dealForm.title}
+                onChange={(e) => setDealForm({...dealForm, title: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Deal title"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={dealForm.description}
+                onChange={(e) => setDealForm({...dealForm, description: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Deal description"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="image_url">Image URL</Label>
+              <Input
+                id="image_url"
+                value={dealForm.image_url}
+                onChange={(e) => setDealForm({...dealForm, image_url: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="original_price">Original Price (£)</Label>
+                <Input
+                  id="original_price"
+                  type="number"
+                  step="0.01"
+                  value={dealForm.original_price}
+                  onChange={(e) => setDealForm({...dealForm, original_price: e.target.value})}
+                  className="bg-gray-700 border-gray-600"
+                  placeholder="99.99"
+                />
+              </div>
+              <div>
+                <Label htmlFor="discounted_price">Sale Price (£)</Label>
+                <Input
+                  id="discounted_price"
+                  type="number"
+                  step="0.01"
+                  value={dealForm.discounted_price}
+                  onChange={(e) => setDealForm({...dealForm, discounted_price: e.target.value})}
+                  className="bg-gray-700 border-gray-600"
+                  placeholder="79.99"
+                />
+              </div>
+            </div>
+
+            {calculateDiscount() > 0 && (
+              <div className="text-green-400 text-sm">
+                Discount: {calculateDiscount()}% OFF
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="affiliate_link">Deal Link</Label>
+              <Input
+                id="affiliate_link"
+                value={dealForm.affiliate_link}
+                onChange={(e) => setDealForm({...dealForm, affiliate_link: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="https://store.example.com/product"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Category</Label>
+                <Select value={dealForm.category_id} onValueChange={(value) => setDealForm({...dealForm, category_id: value})}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Shop</Label>
+                <Select value={dealForm.shop_id} onValueChange={(value) => setDealForm({...dealForm, shop_id: value})}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectValue placeholder="Select shop" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {shops.map((shop) => (
+                      <SelectItem key={shop.id} value={shop.id}>
+                        {shop.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="expires_at">Expires At</Label>
+                <Input
+                  id="expires_at"
+                  type="datetime-local"
+                  value={dealForm.expires_at}
+                  onChange={(e) => setDealForm({...dealForm, expires_at: e.target.value})}
+                  className="bg-gray-700 border-gray-600"
+                />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={dealForm.status} onValueChange={(value) => setDealForm({...dealForm, status: value})}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDealDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveDeal}>
+              {editingDeal ? 'Update Deal' : 'Create Deal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
