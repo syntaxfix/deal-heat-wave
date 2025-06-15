@@ -176,14 +176,18 @@ const Index = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button size="lg" variant="success" className="px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
-                <Gift className="h-5 w-5 mr-2" />
-                Browse Hot Deals
-              </Button>
-              <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 px-8 py-4 text-lg font-semibold">
-                <Target className="h-5 w-5 mr-2" />
-                Post a Deal
-              </Button>
+              <Link to="/deals">
+                <Button size="lg" variant="success" className="px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+                  <Gift className="h-5 w-5 mr-2" />
+                  Browse Hot Deals
+                </Button>
+              </Link>
+              <Link to="/post-deal">
+                <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 px-8 py-4 text-lg font-semibold">
+                  <Target className="h-5 w-5 mr-2" />
+                  Post a Deal
+                </Button>
+              </Link>
             </div>
           </div>
 
@@ -247,10 +251,12 @@ const Index = () => {
                   </h2>
                   <p className="text-red-100">Don't miss out on these incredible deals!</p>
                 </div>
-                <Button variant="limited-time-light" className="bg-white text-red-500 hover:bg-red-50 font-semibold">
-                  View All
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </Button>
+                <Link to="/deals">
+                  <Button variant="limited-time-light" className="bg-white text-red-500 hover:bg-red-50 font-semibold">
+                    View All
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               </div>
             </div>
 
@@ -418,9 +424,16 @@ const Index = () => {
                             </Badge>
                           )}
                         </div>
-                        <Button variant="limited-time" className="w-full hover:opacity-90">
-                          Get This Deal
-                        </Button>
+                        <a
+                          href={stats.hotDeal.affiliate_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button variant="limited-time" className="w-full hover:opacity-90">
+                            Get This Deal
+                          </Button>
+                        </a>
                       </div>
                     </Link>
                   </CardContent>

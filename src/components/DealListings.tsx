@@ -60,11 +60,31 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
 
     // Apply filters
     if (categorySlug) {
-      query = query.eq('categories.slug', categorySlug);
+      // Get category ID first
+      const { data: categoryData } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('slug', categorySlug)
+        .single();
+      
+      if (categoryData) {
+        query = query.eq('category_id', categoryData.id);
+      }
     }
+    
     if (shopSlug) {
-      query = query.eq('shops.slug', shopSlug);
+      // Get shop ID first
+      const { data: shopData } = await supabase
+        .from('shops')
+        .select('id')
+        .eq('slug', shopSlug)
+        .single();
+      
+      if (shopData) {
+        query = query.eq('shop_id', shopData.id);
+      }
     }
+    
     if (searchQuery) {
       query = query.or(`title.ilike.%${searchQuery}%, description.ilike.%${searchQuery}%`);
     }
@@ -74,11 +94,17 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
       case 'hot':
         query = query.order('heat_score', { ascending: false });
         break;
-      case 'new':
+      case 'newest':
         query = query.order('created_at', { ascending: false });
         break;
-      case 'popular':
-        query = query.order('upvotes', { ascending: false });
+      case 'discount':
+        query = query.order('discount_percentage', { ascending: false });
+        break;
+      case 'price_low':
+        query = query.order('discounted_price', { ascending: true });
+        break;
+      case 'price_high':
+        query = query.order('discounted_price', { ascending: false });
         break;
       default:
         query = query.order('created_at', { ascending: false });

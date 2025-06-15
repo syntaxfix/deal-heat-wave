@@ -110,19 +110,28 @@ const Category = () => {
       case 'discount':
         query = query.order('discount_percentage', { ascending: false });
         break;
+      case 'price_low':
+        query = query.order('discounted_price', { ascending: true });
+        break;
+      case 'price_high':
+        query = query.order('discounted_price', { ascending: false });
+        break;
       default:
         query = query.order('created_at', { ascending: false });
     }
 
     const { data: dealsData, error: dealsError } = await query;
 
-    if (!dealsError) {
+    if (!dealsError && dealsData) {
       // Transform the data to match the expected Deal interface
-      const transformedDeals = (dealsData || []).map(deal => ({
+      const transformedDeals = dealsData.map(deal => ({
         ...deal,
-        categories: { name: category.name, slug: category.slug }
+        categories: { name: categoryData.name, slug: categoryData.slug }
       }));
       setDeals(transformedDeals);
+    } else {
+      console.error('Error fetching deals:', dealsError);
+      setDeals([]);
     }
 
     setLoading(false);
@@ -213,7 +222,7 @@ const Category = () => {
             onSortChange={setSortBy}
           />
 
-          {deals.length === 0 ? (
+          {deals.length === 0 && !loading ? (
             <div className="text-center py-12">
               <Tag className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
