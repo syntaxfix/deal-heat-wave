@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -58,7 +57,17 @@ export const ShopForm = () => {
       if (slugError) throw slugError;
 
       const { error } = await supabase.from('shops').insert({
-        ...values,
+        name: values.name,
+        description: values.description,
+        long_description: values.long_description,
+        website_url: values.website_url,
+        category: values.category,
+        logo_url: values.logo_url,
+        banner_url: values.banner_url,
+        meta_title: values.meta_title,
+        meta_description: values.meta_description,
+        meta_keywords: values.meta_keywords,
+        canonical_url: values.canonical_url,
         slug: slugData,
       });
 

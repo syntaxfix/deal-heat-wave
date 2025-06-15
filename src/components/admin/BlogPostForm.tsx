@@ -57,13 +57,21 @@ export const BlogPostForm = () => {
 
       if (slugError) throw slugError;
 
-      const { tags, ...restOfValues } = values;
-      const tagsArray = tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [];
+      const tagsArray = values.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [];
 
       const { error } = await supabase.from('blog_posts').insert({
-        ...restOfValues,
-        slug: slugData,
+        title: values.title,
+        content: values.content,
+        summary: values.summary,
+        category: values.category,
         tags: tagsArray,
+        featured_image: values.featured_image,
+        status: values.status,
+        meta_title: values.meta_title,
+        meta_description: values.meta_description,
+        meta_keywords: values.meta_keywords,
+        canonical_url: values.canonical_url,
+        slug: slugData,
       });
 
       if (error) throw error;

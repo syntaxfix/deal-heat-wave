@@ -12,7 +12,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import ImageUpload from './ImageUpload';
-import { Database } from '@/integrations/supabase/types';
 
 const dealFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -31,13 +30,12 @@ const dealFormSchema = z.object({
 });
 
 type DealFormValues = z.infer<typeof dealFormSchema>;
-type Category = Database['public']['Tables']['categories']['Row'];
-type Shop = Database['public']['Tables']['shops']['Row'];
+type DropdownItem = { id: string; name: string };
 
 export const DealForm = () => {
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [shops, setShops] = useState<Shop[]>([]);
+  const [categories, setCategories] = useState<DropdownItem[]>([]);
+  const [shops, setShops] = useState<DropdownItem[]>([]);
 
   useEffect(() => {
     const fetchDropdownData = async () => {
@@ -76,9 +74,20 @@ export const DealForm = () => {
       if (slugError) throw slugError;
 
       const { error } = await supabase.from('deals').insert({
-        ...values,
-        slug: slugData,
+        title: values.title,
+        description: values.description,
+        image_url: values.image_url,
+        affiliate_link: values.affiliate_link,
+        original_price: values.original_price,
+        discounted_price: values.discounted_price,
+        category_id: values.category_id,
+        shop_id: values.shop_id,
         expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
+        meta_title: values.meta_title,
+        meta_description: values.meta_description,
+        meta_keywords: values.meta_keywords,
+        canonical_url: values.canonical_url,
+        slug: slugData,
       });
 
       if (error) throw error;
