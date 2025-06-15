@@ -11,8 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Store, ExternalLink, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { ViewType } from '@/components/ViewSwitcher';
-import ViewSwitcher from '@/components/ViewSwitcher';
 
 interface Shop {
   id: string;
@@ -59,11 +57,9 @@ interface Coupon {
 const ShopDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [shop, setShop] = useState<Shop | null>(null);
-  const [deals, setDeals] = useState<Deal[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [viewType, setViewType] = useState<ViewType>('grid');
 
   useEffect(() => {
     if (slug) {
@@ -108,26 +104,6 @@ const ShopDetail = () => {
     }
 
     setShop(shopData);
-
-    // Fetch deals for this shop
-    const { data: dealsData, error: dealsError } = await supabase
-      .from('deals')
-      .select(`
-        *,
-        categories:category_id (name, slug)
-      `)
-      .eq('shop_id', shopData.id)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false });
-
-    if (!dealsError) {
-      // Transform the data to match the expected Deal interface
-      const transformedDeals = (dealsData || []).map(deal => ({
-        ...deal,
-        shops: { name: shopData.name, slug: shopData.slug, logo_url: shopData.logo_url }
-      }));
-      setDeals(transformedDeals);
-    }
 
     // Fetch coupons for this shop
     const { data: couponsData, error: couponsError } = await supabase
@@ -241,9 +217,6 @@ const ShopDetail = () => {
                   )}
                   <div className="flex items-center space-x-4">
                     <span className="text-sm text-gray-600">
-                      {deals.length} active deals
-                    </span>
-                    <span className="text-sm text-gray-600">
                       {coupons.length} coupons
                     </span>
                     {shop.website_url && (
@@ -266,38 +239,15 @@ const ShopDetail = () => {
           {/* Tabs */}
           <Tabs defaultValue="deals" className="space-y-6">
             <TabsList>
-              <TabsTrigger value="deals">Deals ({deals.length})</TabsTrigger>
+              <TabsTrigger value="deals">Deals</TabsTrigger>
               <TabsTrigger value="coupons">Coupons ({coupons.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="deals">
-              {deals.length === 0 ? (
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      No deals available
-                    </h3>
-                    <p className="text-gray-600">
-                      Check back soon for new deals from {shop.name}!
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {deals.length} Deal{deals.length !== 1 ? 's' : ''} from {shop.name}
-                    </h2>
-                    <ViewSwitcher currentView={viewType} onViewChange={setViewType} />
-                  </div>
-                  <DealListings
-                    shopSlug={slug}
-                    sortBy="newest"
-                    viewType={viewType}
-                  />
-                </div>
-              )}
+              <DealListings
+                shopSlug={slug}
+                sortBy="newest"
+              />
             </TabsContent>
 
             <TabsContent value="coupons">
