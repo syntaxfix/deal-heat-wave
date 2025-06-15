@@ -16,6 +16,9 @@ import { Plus, Edit, Trash2, Store, BookOpen, FileText, Users, Tag, Search } fro
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/admin/EmptyState';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
+import MDEditor from '@uiw/react-md-editor';
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@uiw/react-markdown-preview/markdown.css';
 
 interface Shop {
   id: string;
@@ -24,6 +27,14 @@ interface Shop {
   description: string;
   website_url: string;
   slug: string;
+  logo_url?: string;
+  banner_url?: string;
+  category?: string;
+  long_description?: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  canonical_url?: string;
 }
 
 interface Blog {
@@ -34,6 +45,15 @@ interface Blog {
   author_id: string;
   status: 'published' | 'draft';
   slug: string;
+  summary?: string;
+  featured_image?: string;
+  category?: string;
+  tags?: string[];
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  canonical_url?: string;
+  read_time?: number;
 }
 
 interface Page {
@@ -43,6 +63,10 @@ interface Page {
   slug: string;
   content: string;
   is_visible: boolean;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  canonical_url?: string;
 }
 
 interface User {
@@ -65,6 +89,19 @@ interface Deal {
   heat_score: number;
   upvotes: number;
   downvotes: number;
+  discount_percentage?: number;
+  category_id?: string;
+  shop_id?: string;
+  user_id?: string;
+  views?: number;
+  expires_at?: string;
+  image_url?: string;
+  affiliate_link?: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  canonical_url?: string;
+  slug?: string;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -1031,7 +1068,7 @@ const RootDashboard = () => {
                     Add Shop
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingShopId ? 'Edit Shop' : 'Create Shop'}</DialogTitle>
                     <DialogDescription>
@@ -1040,9 +1077,7 @@ const RootDashboard = () => {
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">
-                        Name
-                      </Label>
+                      <Label htmlFor="name" className="text-right">Name *</Label>
                       <Input
                         type="text"
                         id="name"
@@ -1050,29 +1085,116 @@ const RootDashboard = () => {
                         value={shopForm.name || ''}
                         onChange={handleShopInputChange}
                         className="col-span-3"
+                        required
                       />
                     </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                      <Label htmlFor="description" className="text-right pt-2">Description</Label>
+                      <div className="col-span-3">
+                        <MDEditor
+                          value={shopForm.description || ''}
+                          onChange={(value) => setShopForm({ ...shopForm, description: value || '' })}
+                          preview="edit"
+                          hideToolbar={false}
+                          data-color-mode="light"
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="description" className="text-right">
-                        Description
-                      </Label>
-                      <Textarea
-                        id="description"
-                        name="description"
-                        value={shopForm.description || ''}
+                      <Label htmlFor="website_url" className="text-right">Website URL</Label>
+                      <Input
+                        type="url"
+                        id="website_url"
+                        name="website_url"
+                        value={shopForm.website_url || ''}
                         onChange={handleShopInputChange}
                         className="col-span-3"
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="website_url" className="text-right">
-                        Website URL
-                      </Label>
+                      <Label htmlFor="logo_url" className="text-right">Logo URL</Label>
+                      <Input
+                        type="url"
+                        id="logo_url"
+                        name="logo_url"
+                        value={shopForm.logo_url || ''}
+                        onChange={handleShopInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="banner_url" className="text-right">Banner URL</Label>
+                      <Input
+                        type="url"
+                        id="banner_url"
+                        name="banner_url"
+                        value={shopForm.banner_url || ''}
+                        onChange={handleShopInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="category" className="text-right">Category</Label>
                       <Input
                         type="text"
-                        id="website_url"
-                        name="website_url"
-                        value={shopForm.website_url || ''}
+                        id="category"
+                        name="category"
+                        value={shopForm.category || ''}
+                        onChange={handleShopInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                      <Label htmlFor="long_description" className="text-right pt-2">Long Description</Label>
+                      <div className="col-span-3">
+                        <MDEditor
+                          value={shopForm.long_description || ''}
+                          onChange={(value) => setShopForm({ ...shopForm, long_description: value || '' })}
+                          preview="edit"
+                          hideToolbar={false}
+                          data-color-mode="light"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_title" className="text-right">Meta Title</Label>
+                      <Input
+                        type="text"
+                        id="meta_title"
+                        name="meta_title"
+                        value={shopForm.meta_title || ''}
+                        onChange={handleShopInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_description" className="text-right">Meta Description</Label>
+                      <Textarea
+                        id="meta_description"
+                        name="meta_description"
+                        value={shopForm.meta_description || ''}
+                        onChange={handleShopInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_keywords" className="text-right">Meta Keywords</Label>
+                      <Input
+                        type="text"
+                        id="meta_keywords"
+                        name="meta_keywords"
+                        value={shopForm.meta_keywords || ''}
+                        onChange={handleShopInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="canonical_url" className="text-right">Canonical URL</Label>
+                      <Input
+                        type="text"
+                        id="canonical_url"
+                        name="canonical_url"
+                        value={shopForm.canonical_url || ''}
                         onChange={handleShopInputChange}
                         className="col-span-3"
                       />
@@ -1111,7 +1233,7 @@ const RootDashboard = () => {
                     Add Blog Post
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingBlogId ? 'Edit Blog Post' : 'Create Blog Post'}</DialogTitle>
                     <DialogDescription>
@@ -1120,9 +1242,7 @@ const RootDashboard = () => {
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="title" className="text-right">
-                        Title
-                      </Label>
+                      <Label htmlFor="title" className="text-right">Title *</Label>
                       <Input
                         type="text"
                         id="title"
@@ -1130,25 +1250,67 @@ const RootDashboard = () => {
                         value={blogForm.title || ''}
                         onChange={handleBlogInputChange}
                         className="col-span-3"
+                        required
                       />
                     </div>
+                    <div className="grid grid-cols-4 items-start gap-4">
+                      <Label htmlFor="content" className="text-right pt-2">Content</Label>
+                      <div className="col-span-3">
+                        <MDEditor
+                          value={blogForm.content || ''}
+                          onChange={(value) => setBlogForm({ ...blogForm, content: value || '' })}
+                          preview="edit"
+                          hideToolbar={false}
+                          data-color-mode="light"
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="content" className="text-right">
-                        Content
-                      </Label>
+                      <Label htmlFor="summary" className="text-right">Summary</Label>
                       <Textarea
-                        id="content"
-                        name="content"
-                        value={blogForm.content || ''}
+                        id="summary"
+                        name="summary"
+                        value={blogForm.summary || ''}
                         onChange={handleBlogInputChange}
                         className="col-span-3"
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="status" className="text-right">
-                        Status
-                      </Label>
-                      <Select onValueChange={(value) => setBlogForm({ ...blogForm, status: value as 'published' | 'draft' })}>
+                      <Label htmlFor="featured_image" className="text-right">Featured Image</Label>
+                      <Input
+                        type="url"
+                        id="featured_image"
+                        name="featured_image"
+                        value={blogForm.featured_image || ''}
+                        onChange={handleBlogInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="category" className="text-right">Category</Label>
+                      <Input
+                        type="text"
+                        id="category"
+                        name="category"
+                        value={blogForm.category || ''}
+                        onChange={handleBlogInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="read_time" className="text-right">Read Time (min)</Label>
+                      <Input
+                        type="number"
+                        id="read_time"
+                        name="read_time"
+                        value={blogForm.read_time || ''}
+                        onChange={handleBlogInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="status" className="text-right">Status</Label>
+                      <Select onValueChange={(value) => setBlogForm({ ...blogForm, status: value as 'published' | 'draft' })} defaultValue={blogForm.status}>
                         <SelectTrigger className="col-span-3">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -1157,6 +1319,49 @@ const RootDashboard = () => {
                           <SelectItem value="published">Published</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_title" className="text-right">Meta Title</Label>
+                      <Input
+                        type="text"
+                        id="meta_title"
+                        name="meta_title"
+                        value={blogForm.meta_title || ''}
+                        onChange={handleBlogInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_description" className="text-right">Meta Description</Label>
+                      <Textarea
+                        id="meta_description"
+                        name="meta_description"
+                        value={blogForm.meta_description || ''}
+                        onChange={handleBlogInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_keywords" className="text-right">Meta Keywords</Label>
+                      <Input
+                        type="text"
+                        id="meta_keywords"
+                        name="meta_keywords"
+                        value={blogForm.meta_keywords || ''}
+                        onChange={handleBlogInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="canonical_url" className="text-right">Canonical URL</Label>
+                      <Input
+                        type="text"
+                        id="canonical_url"
+                        name="canonical_url"
+                        value={blogForm.canonical_url || ''}
+                        onChange={handleBlogInputChange}
+                        className="col-span-3"
+                      />
                     </div>
                   </div>
                   <DialogFooter>
@@ -1192,7 +1397,7 @@ const RootDashboard = () => {
                     Add Page
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingPageId ? 'Edit Page' : 'Create Page'}</DialogTitle>
                     <DialogDescription>
@@ -1201,9 +1406,7 @@ const RootDashboard = () => {
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="title" className="text-right">
-                        Title
-                      </Label>
+                      <Label htmlFor="title" className="text-right">Title *</Label>
                       <Input
                         type="text"
                         id="title"
@@ -1211,25 +1414,24 @@ const RootDashboard = () => {
                         value={pageForm.title || ''}
                         onChange={handlePageInputChange}
                         className="col-span-3"
+                        required
                       />
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="content" className="text-right">
-                        Content
-                      </Label>
-                      <Textarea
-                        id="content"
-                        name="content"
-                        value={pageForm.content || ''}
-                        onChange={handlePageInputChange}
-                        className="col-span-3"
-                      />
+                    <div className="grid grid-cols-4 items-start gap-4">
+                      <Label htmlFor="content" className="text-right pt-2">Content</Label>
+                      <div className="col-span-3">
+                        <MDEditor
+                          value={pageForm.content || ''}
+                          onChange={(value) => setPageForm({ ...pageForm, content: value || '' })}
+                          preview="edit"
+                          hideToolbar={false}
+                          data-color-mode="light"
+                        />
+                      </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="is_visible" className="text-right">
-                        Visibility
-                      </Label>
-                      <Select onValueChange={(value) => setPageForm({ ...pageForm, is_visible: value === 'true' })}>
+                      <Label htmlFor="is_visible" className="text-right">Visibility</Label>
+                      <Select onValueChange={(value) => setPageForm({ ...pageForm, is_visible: value === 'true' })} defaultValue={pageForm.is_visible?.toString()}>
                         <SelectTrigger className="col-span-3">
                           <SelectValue placeholder="Select visibility" />
                         </SelectTrigger>
@@ -1238,6 +1440,49 @@ const RootDashboard = () => {
                           <SelectItem value="false">Hidden</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_title" className="text-right">Meta Title</Label>
+                      <Input
+                        type="text"
+                        id="meta_title"
+                        name="meta_title"
+                        value={pageForm.meta_title || ''}
+                        onChange={handlePageInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_description" className="text-right">Meta Description</Label>
+                      <Textarea
+                        id="meta_description"
+                        name="meta_description"
+                        value={pageForm.meta_description || ''}
+                        onChange={handlePageInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="meta_keywords" className="text-right">Meta Keywords</Label>
+                      <Input
+                        type="text"
+                        id="meta_keywords"
+                        name="meta_keywords"
+                        value={pageForm.meta_keywords || ''}
+                        onChange={handlePageInputChange}
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="canonical_url" className="text-right">Canonical URL</Label>
+                      <Input
+                        type="text"
+                        id="canonical_url"
+                        name="canonical_url"
+                        value={pageForm.canonical_url || ''}
+                        onChange={handlePageInputChange}
+                        className="col-span-3"
+                      />
                     </div>
                   </div>
                   <DialogFooter>
@@ -1283,9 +1528,40 @@ const RootDashboard = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="role" className="text-right">
-                Role
-              </Label>
+              <Label htmlFor="username" className="text-right">Username</Label>
+              <Input
+                type="text"
+                id="username"
+                name="username"
+                value={userForm.username || ''}
+                onChange={handleUserInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="full_name" className="text-right">Full Name</Label>
+              <Input
+                type="text"
+                id="full_name"
+                name="full_name"
+                value={userForm.full_name || ''}
+                onChange={handleUserInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="avatar_url" className="text-right">Avatar URL</Label>
+              <Input
+                type="url"
+                id="avatar_url"
+                name="avatar_url"
+                value={userForm.avatar_url || ''}
+                onChange={handleUserInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="role" className="text-right">Role</Label>
               <Select onValueChange={(value) => setUserForm({ ...userForm, role: value as 'user' | 'admin' })} defaultValue={userForm.role}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select role" />
@@ -1306,7 +1582,7 @@ const RootDashboard = () => {
       </Dialog>
 
       <Dialog open={isDealDialogOpen} onOpenChange={setIsDealDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Deal</DialogTitle>
             <DialogDescription>
@@ -1315,9 +1591,87 @@ const RootDashboard = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Status
-              </Label>
+              <Label htmlFor="title" className="text-right">Title</Label>
+              <Input
+                type="text"
+                id="title"
+                name="title"
+                value={dealForm.title || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right pt-2">Description</Label>
+              <div className="col-span-3">
+                <MDEditor
+                  value={dealForm.description || ''}
+                  onChange={(value) => setDealForm({ ...dealForm, description: value || '' })}
+                  preview="edit"
+                  hideToolbar={false}
+                  data-color-mode="light"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="original_price" className="text-right">Original Price</Label>
+              <Input
+                type="number"
+                step="0.01"
+                id="original_price"
+                name="original_price"
+                value={dealForm.original_price || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="discounted_price" className="text-right">Discounted Price</Label>
+              <Input
+                type="number"
+                step="0.01"
+                id="discounted_price"
+                name="discounted_price"
+                value={dealForm.discounted_price || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="image_url" className="text-right">Image URL</Label>
+              <Input
+                type="url"
+                id="image_url"
+                name="image_url"
+                value={dealForm.image_url || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="affiliate_link" className="text-right">Affiliate Link</Label>
+              <Input
+                type="url"
+                id="affiliate_link"
+                name="affiliate_link"
+                value={dealForm.affiliate_link || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="expires_at" className="text-right">Expires At</Label>
+              <Input
+                type="datetime-local"
+                id="expires_at"
+                name="expires_at"
+                value={dealForm.expires_at ? new Date(dealForm.expires_at).toISOString().slice(0, -8) : ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">Status</Label>
               <Select onValueChange={(value) => setDealForm({ ...dealForm, status: value as 'pending' | 'approved' | 'rejected' })} defaultValue={dealForm.status}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
@@ -1328,6 +1682,49 @@ const RootDashboard = () => {
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="meta_title" className="text-right">Meta Title</Label>
+              <Input
+                type="text"
+                id="meta_title"
+                name="meta_title"
+                value={dealForm.meta_title || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="meta_description" className="text-right">Meta Description</Label>
+              <Textarea
+                id="meta_description"
+                name="meta_description"
+                value={dealForm.meta_description || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="meta_keywords" className="text-right">Meta Keywords</Label>
+              <Input
+                type="text"
+                id="meta_keywords"
+                name="meta_keywords"
+                value={dealForm.meta_keywords || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="canonical_url" className="text-right">Canonical URL</Label>
+              <Input
+                type="text"
+                id="canonical_url"
+                name="canonical_url"
+                value={dealForm.canonical_url || ''}
+                onChange={handleDealInputChange}
+                className="col-span-3"
+              />
             </div>
           </div>
           <DialogFooter>
