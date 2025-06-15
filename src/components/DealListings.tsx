@@ -32,14 +32,28 @@ interface DealListingsProps {
   shopSlug?: string;
   sortBy?: string;
   searchQuery?: string;
+  viewType?: ViewType;
 }
 
-const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: DealListingsProps) => {
+const DealListings = ({ 
+  categorySlug, 
+  shopSlug, 
+  sortBy = 'hot', 
+  searchQuery,
+  viewType: externalViewType
+}: DealListingsProps) => {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const [viewType, setViewType] = useState<ViewType>('grid');
+  const [viewType, setViewType] = useState<ViewType>(externalViewType || 'grid');
+
+  // Update internal viewType when external prop changes
+  useEffect(() => {
+    if (externalViewType) {
+      setViewType(externalViewType);
+    }
+  }, [externalViewType]);
 
   useEffect(() => {
     console.log('DealListings - Fetching deals with params:', { categorySlug, shopSlug, sortBy, searchQuery });
@@ -284,7 +298,9 @@ const DealListings = ({ categorySlug, shopSlug, sortBy = 'hot', searchQuery }: D
         <h2 className="text-xl font-semibold text-gray-900">
           {deals.length} Deal{deals.length !== 1 ? 's' : ''} Found
         </h2>
-        <ViewSwitcher currentView={viewType} onViewChange={setViewType} />
+        {!externalViewType && (
+          <ViewSwitcher currentView={viewType} onViewChange={setViewType} />
+        )}
       </div>
       
       <InfiniteScroll

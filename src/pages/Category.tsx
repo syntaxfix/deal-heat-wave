@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ import FilterBar from '@/components/FilterBar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Tag } from 'lucide-react';
+import { ViewType } from '@/components/ViewSwitcher';
 
 interface Category {
   id: string;
