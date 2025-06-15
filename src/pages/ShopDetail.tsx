@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Store, ExternalLink, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import MDEditor from '@uiw/react-md-editor';
+import { useCurrencySetting } from '@/hooks/useCurrencySetting';
 
 interface Shop {
   id: string;
@@ -77,6 +78,7 @@ const ShopDetail = () => {
   const [allCategories, setAllCategories] = useState<PageCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const { data: currency, isLoading: isCurrencyLoading } = useCurrencySetting();
 
   useEffect(() => {
     if (slug) {
@@ -354,7 +356,7 @@ const ShopDetail = () => {
                             <p>Save {coupon.discount_percentage}%</p>
                           )}
                           {coupon.discount_amount && (
-                            <p>Save ${coupon.discount_amount}</p>
+                            <p>Save {isCurrencyLoading ? <Skeleton className="h-4 w-10 inline-block" /> : <span>{currency?.symbol}{coupon.discount_amount}</span>}</p>
                           )}
                           {coupon.expires_at && (
                             <p>Expires: {new Date(coupon.expires_at).toLocaleDateString()}</p>
