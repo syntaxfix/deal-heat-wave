@@ -29,7 +29,7 @@ const SearchBar = ({ onSearch, placeholder = "Search deals..." }: SearchBarProps
           className="pl-10"
         />
       </div>
-      <Button type="submit">
+      <Button type="submit" variant="limited-time">
         Search
       </Button>
     </form>

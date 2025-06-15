@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
@@ -175,7 +176,7 @@ const Index = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button size="lg" className="primary-cta-gradient text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
+              <Button size="lg" variant="success" className="px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105">
                 <Gift className="h-5 w-5 mr-2" />
                 Browse Hot Deals
               </Button>
@@ -246,7 +247,7 @@ const Index = () => {
                   </h2>
                   <p className="text-red-100">Don't miss out on these incredible deals!</p>
                 </div>
-                <Button className="bg-white text-red-500 hover:bg-red-50 font-semibold">
+                <Button variant="limited-time-light" className="bg-white text-red-500 hover:bg-red-50 font-semibold">
                   View All
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
@@ -412,7 +413,7 @@ const Index = () => {
                             </Badge>
                           )}
                         </div>
-                        <Button className="w-full limited-time-gradient hover:opacity-90">
+                        <Button variant="limited-time" className="w-full hover:opacity-90">
                           Get This Deal
                         </Button>
                       </div>
@@ -493,7 +494,7 @@ const Index = () => {
                     <span className="text-green-500">✓</span>
                     <span>Vote on deals you like</span>
                   </div>
-                  <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700" size="sm">
+                  <Button variant="info" className="w-full mt-4" size="sm">
                     Share a Deal
                   </Button>
                 </CardContent>

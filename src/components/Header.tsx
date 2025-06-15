@@ -87,7 +87,7 @@ const Header = () => {
           {/* Right Side */}
           <div className="flex items-center space-x-4">
             {/* Post Deal Button */}
-            <Button onClick={handlePostDeal} className="hidden sm:flex">
+            <Button onClick={handlePostDeal} variant="limited-time" className="hidden sm:flex">
               <Plus className="h-4 w-4 mr-2" />
               Post Deal
             </Button>
@@ -131,7 +131,7 @@ const Header = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button asChild>
+              <Button variant="limited-time" asChild>
                 <Link to="/auth">Sign In</Link>
               </Button>
             )}
