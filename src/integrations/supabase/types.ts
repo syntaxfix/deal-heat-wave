@@ -599,6 +599,10 @@ export type Database = {
         Args: { title: string; table_name: string }
         Returns: string
       }
+      get_dashboard_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_shops_with_counts: {
         Args: Record<PropertyKey, never>
         Returns: {

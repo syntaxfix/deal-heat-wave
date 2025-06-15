@@ -76,39 +76,33 @@ const DealListings = ({
       `)
       .eq('status', 'approved');
 
-    // Apply filters
-    if (categorySlug && categorySlug !== 'all' && categorySlug !== '') {
-      console.log('Filtering by category slug:', categorySlug);
-      // Get category ID first
-      const { data: categoryData } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('slug', categorySlug)
-        .single();
-      
-      if (categoryData) {
-        console.log('Found category ID:', categoryData.id);
-        query = query.eq('category_id', categoryData.id);
-      } else {
-        console.log('Category not found for slug:', categorySlug);
-      }
-    }
+    // Apply filters by fetching IDs in parallel for performance
+    const categoryPromise = (categorySlug && categorySlug !== 'all' && categorySlug !== '')
+      ? supabase.from('categories').select('id').eq('slug', categorySlug).single()
+      : Promise.resolve({ data: null, error: null });
+
+    const shopPromise = (shopSlug && shopSlug !== 'all' && shopSlug !== '')
+      ? supabase.from('shops').select('id').eq('slug', shopSlug).single()
+      : Promise.resolve({ data: null, error: null });
     
+    const [categoryResult, shopResult] = await Promise.all([categoryPromise, shopPromise]);
+    
+    if (categorySlug && categorySlug !== 'all' && categorySlug !== '') {
+        if (categoryResult.data) {
+            query = query.eq('category_id', categoryResult.data.id);
+        } else {
+            console.log('Category not found for slug:', categorySlug);
+            setDeals([]); setHasMore(false); setLoading(false); return;
+        }
+    }
+
     if (shopSlug && shopSlug !== 'all' && shopSlug !== '') {
-      console.log('Filtering by shop slug:', shopSlug);
-      // Get shop ID first
-      const { data: shopData } = await supabase
-        .from('shops')
-        .select('id')
-        .eq('slug', shopSlug)
-        .single();
-      
-      if (shopData) {
-        console.log('Found shop ID:', shopData.id);
-        query = query.eq('shop_id', shopData.id);
-      } else {
-        console.log('Shop not found for slug:', shopSlug);
-      }
+        if (shopResult.data) {
+            query = query.eq('shop_id', shopResult.data.id);
+        } else {
+            console.log('Shop not found for slug:', shopSlug);
+            setDeals([]); setHasMore(false); setLoading(false); return;
+        }
     }
     
     if (searchQuery) {
