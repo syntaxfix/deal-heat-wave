@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import Header from '@/components/Header';
 import DealListings from '@/components/DealListings';
 import SearchBar from '@/components/SearchBar';
 import FilterBar from '@/components/FilterBar';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Users, Package, Clock, Star, ArrowRight, Zap, Gift, Target, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { categories } from '@/data/categories';
 
 interface Category {
   id: string;
@@ -42,7 +43,7 @@ interface Stats {
 }
 
 const Index = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesData, setCategoriesData] = useState<Category[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [stats, setStats] = useState<Stats>({
@@ -57,6 +58,8 @@ const Index = () => {
 
   useEffect(() => {
     fetchInitialData();
+    // Use the imported categories from data file
+    setCategoriesData(categories.slice(0, 8));
   }, []);
 
   const fetchInitialData = async () => {
@@ -67,7 +70,7 @@ const Index = () => {
         .select('*')
         .limit(8);
       
-      if (categoriesData) setCategories(categoriesData);
+      if (categoriesData) setCategoriesData(categoriesData);
 
       // Fetch shops
       const { data: shopsData } = await supabase
@@ -117,6 +120,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <Header />
+      
       {/* Enhanced Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700">
         {/* Background Pattern */}
@@ -250,24 +255,27 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {categories.map((category) => (
-                  <Link
-                    key={category.id}
-                    to={`/category/${category.slug}`}
-                    className="group"
-                  >
-                    <Card className="hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:border-blue-300 border-2 border-transparent">
-                      <CardContent className="p-6 text-center">
-                        <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
-                          {category.icon || '📦'}
-                        </div>
-                        <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                          {category.name}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                {categoriesData.map((category) => {
+                  const IconComponent = category.icon;
+                  return (
+                    <Link
+                      key={category.id}
+                      to={`/category/${category.slug}`}
+                      className="group"
+                    >
+                      <Card className="hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:border-blue-300 border-2 border-transparent">
+                        <CardContent className="p-6 text-center">
+                          <div className="mb-4 group-hover:scale-110 transition-transform">
+                            <IconComponent className="h-12 w-12 mx-auto text-blue-600" />
+                          </div>
+                          <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                            {category.name}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
               
               <div className="text-center mt-8">

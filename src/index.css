@@ -113,6 +113,21 @@
   .heat-gradient-cold {
     background: linear-gradient(135deg, #87CEEB 0%, #4A90E2 100%);
   }
+
+  /* New Limited Time Offers gradient that can be used sitewide */
+  .limited-time-gradient {
+    background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%);
+  }
+
+  /* Hot deals banner - applies the red to pink gradient */
+  .hot-deals-banner {
+    background: linear-gradient(135deg, #ef4444 0%, #ec4899 100%);
+  }
+
+  /* Primary CTA gradient */
+  .primary-cta-gradient {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
 }
 
 @layer utilities {
