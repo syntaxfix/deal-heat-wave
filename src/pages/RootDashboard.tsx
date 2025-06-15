@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Plus, Edit, Trash2, Store, BookOpen, FileText, Users, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, Store, BookOpen, FileText, Users, Tag, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/admin/EmptyState';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
@@ -99,90 +99,124 @@ const RootDashboard = () => {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingDealId, setEditingDealId] = useState<string | null>(null);
 
-  // Shops queries with pagination
+  // Search states
+  const [searchQueries, setSearchQueries] = useState({
+    shops: '',
+    blogs: '',
+    pages: '',
+    users: '',
+    deals: ''
+  });
+
+  // Shops queries with pagination and search
   const { data: shopsData, isLoading: shopsLoading } = useQuery({
-    queryKey: ['admin-shops', shopsPage],
+    queryKey: ['admin-shops', shopsPage, searchQueries.shops],
     queryFn: async () => {
       const from = (shopsPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
       
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('shops')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      if (searchQueries.shops.trim()) {
+        query = query.or(`name.ilike.%${searchQueries.shops}%,description.ilike.%${searchQueries.shops}%`);
+      }
+
+      const { data, error, count } = await query.range(from, to);
       
       if (error) throw error;
       return { data: data || [], total: count || 0 };
     }
   });
 
-  // Blogs queries with pagination
+  // Blogs queries with pagination and search
   const { data: blogsData, isLoading: blogsLoading } = useQuery({
-    queryKey: ['admin-blogs', blogsPage],
+    queryKey: ['admin-blogs', blogsPage, searchQueries.blogs],
     queryFn: async () => {
       const from = (blogsPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
       
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('blog_posts')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      if (searchQueries.blogs.trim()) {
+        query = query.or(`title.ilike.%${searchQueries.blogs}%,content.ilike.%${searchQueries.blogs}%`);
+      }
+
+      const { data, error, count } = await query.range(from, to);
       
       if (error) throw error;
       return { data: data || [], total: count || 0 };
     }
   });
 
-  // Pages queries with pagination
+  // Pages queries with pagination and search
   const { data: pagesData, isLoading: pagesLoading } = useQuery({
-    queryKey: ['admin-pages', pagesPage],
+    queryKey: ['admin-pages', pagesPage, searchQueries.pages],
     queryFn: async () => {
       const from = (pagesPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
       
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('static_pages')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      if (searchQueries.pages.trim()) {
+        query = query.or(`title.ilike.%${searchQueries.pages}%,content.ilike.%${searchQueries.pages}%,slug.ilike.%${searchQueries.pages}%`);
+      }
+
+      const { data, error, count } = await query.range(from, to);
       
       if (error) throw error;
       return { data: data || [], total: count || 0 };
     }
   });
 
-  // Users queries with pagination
+  // Users queries with pagination and search
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['admin-users', usersPage],
+    queryKey: ['admin-users', usersPage, searchQueries.users],
     queryFn: async () => {
       const from = (usersPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
       
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('profiles')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      if (searchQueries.users.trim()) {
+        query = query.or(`username.ilike.%${searchQueries.users}%,full_name.ilike.%${searchQueries.users}%`);
+      }
+
+      const { data, error, count } = await query.range(from, to);
       
       if (error) throw error;
       return { data: data || [], total: count || 0 };
     }
   });
 
-  // Deals queries with pagination
+  // Deals queries with pagination and search
   const { data: dealsData, isLoading: dealsLoading } = useQuery({
-    queryKey: ['admin-deals', dealsPage],
+    queryKey: ['admin-deals', dealsPage, searchQueries.deals],
     queryFn: async () => {
       const from = (dealsPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
       
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('deals')
         .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      if (searchQueries.deals.trim()) {
+        query = query.or(`title.ilike.%${searchQueries.deals}%,description.ilike.%${searchQueries.deals}%`);
+      }
+
+      const { data, error, count } = await query.range(from, to);
       
       if (error) throw error;
       return { data: data || [], total: count || 0 };
@@ -526,6 +560,28 @@ const RootDashboard = () => {
     setIsDealDialogOpen(true);
   };
 
+  const handleSearchChange = (tab: string, value: string) => {
+    setSearchQueries(prev => ({ ...prev, [tab]: value }));
+    // Reset to first page when searching
+    switch(tab) {
+      case 'shops':
+        setShopsPage(1);
+        break;
+      case 'blogs':
+        setBlogsPage(1);
+        break;
+      case 'pages':
+        setPagesPage(1);
+        break;
+      case 'users':
+        setUsersPage(1);
+        break;
+      case 'deals':
+        setDealsPage(1);
+        break;
+    }
+  };
+
   const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
     if (totalPages <= 1) return null;
 
@@ -575,12 +631,26 @@ const RootDashboard = () => {
     );
   };
 
+  // Search input component
+  const SearchInput = ({ tab, placeholder }: { tab: string; placeholder: string }) => (
+    <div className="relative mb-4">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+      <Input
+        type="text"
+        placeholder={placeholder}
+        value={searchQueries[tab as keyof typeof searchQueries]}
+        onChange={(e) => handleSearchChange(tab, e.target.value)}
+        className="pl-10"
+      />
+    </div>
+  );
+
   const renderShopsContent = () => {
     if (shopsLoading) {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (shops.length === 0 && shopsPage === 1) {
+    if (shops.length === 0 && shopsPage === 1 && !searchQueries.shops.trim()) {
       return (
         <EmptyState
           title="No shops found"
@@ -592,10 +662,19 @@ const RootDashboard = () => {
       );
     }
 
+    if (shops.length === 0 && searchQueries.shops.trim()) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No shops found matching "{searchQueries.shops}"</p>
+        </div>
+      );
+    }
+
     return (
       <>
         <div className="mb-4 text-sm text-muted-foreground">
           Showing {(shopsPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(shopsPage * ITEMS_PER_PAGE, totalShops)} of {totalShops} shops
+          {searchQueries.shops.trim() && ` matching "${searchQueries.shops}"`}
         </div>
         <Table>
           <TableHeader>
@@ -636,7 +715,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (blogs.length === 0 && blogsPage === 1) {
+    if (blogs.length === 0 && blogsPage === 1 && !searchQueries.blogs.trim()) {
       return (
         <EmptyState
           title="No blog posts found"
@@ -648,10 +727,19 @@ const RootDashboard = () => {
       );
     }
 
+    if (blogs.length === 0 && searchQueries.blogs.trim()) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No blog posts found matching "{searchQueries.blogs}"</p>
+        </div>
+      );
+    }
+
     return (
       <>
         <div className="mb-4 text-sm text-muted-foreground">
           Showing {(blogsPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(blogsPage * ITEMS_PER_PAGE, totalBlogs)} of {totalBlogs} blogs
+          {searchQueries.blogs.trim() && ` matching "${searchQueries.blogs}"`}
         </div>
         <Table>
           <TableHeader>
@@ -696,7 +784,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (pages.length === 0 && pagesPage === 1) {
+    if (pages.length === 0 && pagesPage === 1 && !searchQueries.pages.trim()) {
       return (
         <EmptyState
           title="No pages found"
@@ -708,10 +796,19 @@ const RootDashboard = () => {
       );
     }
 
+    if (pages.length === 0 && searchQueries.pages.trim()) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No pages found matching "{searchQueries.pages}"</p>
+        </div>
+      );
+    }
+
     return (
       <>
         <div className="mb-4 text-sm text-muted-foreground">
           Showing {(pagesPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(pagesPage * ITEMS_PER_PAGE, totalPages)} of {totalPages} pages
+          {searchQueries.pages.trim() && ` matching "${searchQueries.pages}"`}
         </div>
         <Table>
           <TableHeader>
@@ -756,7 +853,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (users.length === 0 && usersPage === 1) {
+    if (users.length === 0 && usersPage === 1 && !searchQueries.users.trim()) {
       return (
         <EmptyState
           title="No users found"
@@ -768,10 +865,19 @@ const RootDashboard = () => {
       );
     }
 
+    if (users.length === 0 && searchQueries.users.trim()) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No users found matching "{searchQueries.users}"</p>
+        </div>
+      );
+    }
+
     return (
       <>
         <div className="mb-4 text-sm text-muted-foreground">
           Showing {(usersPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(usersPage * ITEMS_PER_PAGE, totalUsers)} of {totalUsers} users
+          {searchQueries.users.trim() && ` matching "${searchQueries.users}"`}
         </div>
         <Table>
           <TableHeader>
@@ -811,7 +917,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={6} />;
     }
 
-    if (deals.length === 0 && dealsPage === 1) {
+    if (deals.length === 0 && dealsPage === 1 && !searchQueries.deals.trim()) {
       return (
         <EmptyState
           title="No deals found"
@@ -823,10 +929,19 @@ const RootDashboard = () => {
       );
     }
 
+    if (deals.length === 0 && searchQueries.deals.trim()) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No deals found matching "{searchQueries.deals}"</p>
+        </div>
+      );
+    }
+
     return (
       <>
         <div className="mb-4 text-sm text-muted-foreground">
           Showing {(dealsPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(dealsPage * ITEMS_PER_PAGE, totalDeals)} of {totalDeals} deals
+          {searchQueries.deals.trim() && ` matching "${searchQueries.deals}"`}
         </div>
         <Table>
           <TableHeader>
@@ -896,6 +1011,7 @@ const RootDashboard = () => {
               <CardDescription>Manage and moderate user-submitted deals</CardDescription>
             </CardHeader>
             <CardContent>
+              <SearchInput tab="deals" placeholder="Search deals by title or description..." />
               {renderDealsContent()}
             </CardContent>
           </Card>
@@ -975,6 +1091,7 @@ const RootDashboard = () => {
               </Dialog>
             </CardHeader>
             <CardContent>
+              <SearchInput tab="shops" placeholder="Search shops by name or description..." />
               {renderShopsContent()}
             </CardContent>
           </Card>
@@ -1055,6 +1172,7 @@ const RootDashboard = () => {
               </Dialog>
             </CardHeader>
             <CardContent>
+              <SearchInput tab="blogs" placeholder="Search blog posts by title or content..." />
               {renderBlogsContent()}
             </CardContent>
           </Card>
@@ -1135,6 +1253,7 @@ const RootDashboard = () => {
               </Dialog>
             </CardHeader>
             <CardContent>
+              <SearchInput tab="pages" placeholder="Search pages by title, content, or slug..." />
               {renderPagesContent()}
             </CardContent>
           </Card>
@@ -1147,6 +1266,7 @@ const RootDashboard = () => {
               <CardDescription>Manage user accounts and roles</CardDescription>
             </CardHeader>
             <CardContent>
+              <SearchInput tab="users" placeholder="Search users by username or full name..." />
               {renderUsersContent()}
             </CardContent>
           </Card>
