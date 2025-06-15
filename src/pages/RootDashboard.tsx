@@ -128,6 +128,7 @@ const RootDashboard = () => {
   const [pageForm, setPageForm] = useState<Partial<Page>>({});
   const [userForm, setUserForm] = useState<Partial<User>>({});
   const [dealForm, setDealForm] = useState<Partial<Deal>>({});
+  const [isUploading, setIsUploading] = useState(false);
 
   // Editing states
   const [editingShopId, setEditingShopId] = useState<string | null>(null);
@@ -516,6 +517,71 @@ const RootDashboard = () => {
 
   const handleDealInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setDealForm({ ...dealForm, [e.target.name]: e.target.value });
+  };
+
+  const handleImageUpload = async (
+    file: File,
+    bucket: 'shop_images' | 'blog_images' | 'deal_images'
+  ) => {
+    if (!file) return null;
+
+    setIsUploading(true);
+    try {
+      const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
+      
+      toast.success('Image uploaded successfully!');
+      return data.publicUrl;
+    } catch (error: any) {
+      toast.error(`Failed to upload image: ${error.message}`);
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleLogoUpload = async (file?: File) => {
+    if (file) {
+      const url = await handleImageUpload(file, 'shop_images');
+      if (url) {
+        setShopForm(prev => ({ ...prev, logo_url: url }));
+      }
+    }
+  };
+
+  const handleBannerUpload = async (file?: File) => {
+    if (file) {
+      const url = await handleImageUpload(file, 'shop_images');
+      if (url) {
+        setShopForm(prev => ({ ...prev, banner_url: url }));
+      }
+    }
+  };
+
+  const handleFeaturedImageUpload = async (file?: File) => {
+    if (file) {
+      const url = await handleImageUpload(file, 'blog_images');
+      if (url) {
+        setBlogForm(prev => ({ ...prev, featured_image: url }));
+      }
+    }
+  };
+
+  const handleDealImageUpload = async (file?: File) => {
+    if (file) {
+      const url = await handleImageUpload(file, 'deal_images');
+      if (url) {
+        setDealForm(prev => ({ ...prev, image_url: url }));
+      }
+    }
   };
 
   const generateSlug = (title: string) => {
@@ -1142,6 +1208,20 @@ const RootDashboard = () => {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="logo_upload" className="text-right self-start pt-2">
+                        Upload Logo
+                        {isUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                      </Label>
+                      <Input
+                        id="logo_upload"
+                        type="file"
+                        className="col-span-3"
+                        onChange={(e) => handleLogoUpload(e.target.files?.[0])}
+                        disabled={isUploading}
+                        accept="image/*"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="banner_url" className="text-right">Banner URL</Label>
                       <Input
                         type="url"
@@ -1150,6 +1230,20 @@ const RootDashboard = () => {
                         value={shopForm.banner_url || ''}
                         onChange={handleShopInputChange}
                         className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="banner_upload" className="text-right self-start pt-2">
+                        Upload Banner
+                        {isUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                      </Label>
+                      <Input
+                        id="banner_upload"
+                        type="file"
+                        className="col-span-3"
+                        onChange={(e) => handleBannerUpload(e.target.files?.[0])}
+                        disabled={isUploading}
+                        accept="image/*"
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -1223,7 +1317,7 @@ const RootDashboard = () => {
                     <Button 
                       type="button" 
                       onClick={editingShopId ? handleShopEdit : handleShopCreate} 
-                      disabled={createShopMutation.isPending || updateShopMutation.isPending}
+                      disabled={createShopMutation.isPending || updateShopMutation.isPending || isUploading}
                     >
                       {editingShopId ? 'Update Shop' : 'Create Shop'}
                     </Button>
@@ -1303,6 +1397,20 @@ const RootDashboard = () => {
                         value={blogForm.featured_image || ''}
                         onChange={handleBlogInputChange}
                         className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="featured_image_upload" className="text-right self-start pt-2">
+                        Upload Image
+                        {isUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+                      </Label>
+                      <Input
+                        id="featured_image_upload"
+                        type="file"
+                        className="col-span-3"
+                        onChange={(e) => handleFeaturedImageUpload(e.target.files?.[0])}
+                        disabled={isUploading}
+                        accept="image/*"
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -1387,7 +1495,7 @@ const RootDashboard = () => {
                     <Button 
                       type="button" 
                       onClick={editingBlogId ? handleBlogEdit : handleBlogCreate} 
-                      disabled={createBlogMutation.isPending || updateBlogMutation.isPending}
+                      disabled={createBlogMutation.isPending || updateBlogMutation.isPending || isUploading}
                     >
                       {editingBlogId ? 'Update Blog' : 'Create Blog'}
                     </Button>
@@ -1668,6 +1776,20 @@ const RootDashboard = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="deal_image_upload" className="text-right self-start pt-2">
+                Upload Image
+                {isUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+              </Label>
+              <Input
+                id="deal_image_upload"
+                type="file"
+                className="col-span-3"
+                onChange={(e) => handleDealImageUpload(e.target.files?.[0])}
+                disabled={isUploading}
+                accept="image/*"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="affiliate_link" className="text-right">Affiliate Link</Label>
               <Input
                 type="url"
@@ -1766,7 +1888,7 @@ const RootDashboard = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" onClick={handleDealEdit} disabled={updateDealMutation.isPending}>
+            <Button type="button" onClick={handleDealEdit} disabled={updateDealMutation.isPending || isUploading}>
               Update Deal
             </Button>
           </DialogFooter>
