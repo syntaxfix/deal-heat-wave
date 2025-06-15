@@ -13,8 +13,6 @@ import { DealsAdmin } from "@/components/admin/DealsAdmin";
 import { UsersAdmin } from "@/components/admin/UsersAdmin";
 import { DashboardOverview } from "@/components/admin/DashboardOverview";
 import { SettingsAdmin } from "@/components/admin/SettingsAdmin";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
 import { ShopsAdmin } from "@/components/admin/ShopsAdmin";
 import { BlogPostsAdmin } from "@/components/admin/BlogPostsAdmin";
 
@@ -54,24 +52,10 @@ const RootDashboard = () => {
           </TabsContent>
 
           <TabsContent value="shops">
-            <Alert variant="destructive" className="m-4">
-              <Terminal className="h-4 w-4" />
-              <AlertTitle>Under Construction</AlertTitle>
-              <AlertDescription>
-                Full management for Shops is not yet available as some required files are not editable. You can view existing shops, but create and edit functionality is disabled.
-              </AlertDescription>
-            </Alert>
             <ShopsAdmin />
           </TabsContent>
 
           <TabsContent value="blog">
-             <Alert variant="destructive" className="m-4">
-              <Terminal className="h-4 w-4" />
-              <AlertTitle>Under Construction</AlertTitle>
-              <AlertDescription>
-                Full management for Blog Posts is not yet available as some required files are not editable. You can view existing posts, but create and edit functionality is disabled.
-              </AlertDescription>
-            </Alert>
             <BlogPostsAdmin />
           </TabsContent>
 

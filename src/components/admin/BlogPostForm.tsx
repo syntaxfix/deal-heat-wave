@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,6 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import ImageUpload from './ImageUpload';
+import { useQueryClient } from '@tanstack/react-query';
+import { Database } from '@/integrations/supabase/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const blogPostFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -27,9 +29,18 @@ const blogPostFormSchema = z.object({
 });
 
 type BlogPostFormValues = z.infer<typeof blogPostFormSchema>;
+type BlogPost = Database['public']['Tables']['blog_posts']['Row'];
 
-export const BlogPostForm = () => {
+interface BlogPostFormProps {
+  initialData?: BlogPost | null;
+  onSuccess?: () => void;
+}
+
+export const BlogPostForm = ({ initialData, onSuccess }: BlogPostFormProps) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const isEditMode = !!initialData;
+
   const form = useForm<BlogPostFormValues>({
     resolver: zodResolver(blogPostFormSchema),
     defaultValues: {
@@ -46,40 +57,79 @@ export const BlogPostForm = () => {
       canonical_url: '',
     },
   });
+  
+  useEffect(() => {
+    if (isEditMode && initialData) {
+      form.reset({
+        ...initialData,
+        content: initialData.content ?? '',
+        summary: initialData.summary ?? '',
+        category: initialData.category ?? '',
+        tags: initialData.tags?.join(', ') ?? '',
+        featured_image: initialData.featured_image ?? '',
+        status: initialData.status === 'published' ? 'published' : 'draft',
+        meta_title: initialData.meta_title ?? '',
+        meta_description: initialData.meta_description ?? '',
+        meta_keywords: initialData.meta_keywords ?? '',
+        canonical_url: initialData.canonical_url ?? '',
+      });
+    } else {
+      form.reset();
+    }
+  }, [initialData, form, isEditMode]);
 
   const onSubmit: SubmitHandler<BlogPostFormValues> = async (values) => {
     setLoading(true);
     try {
-      const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
-        title: values.title,
-        table_name: 'blog_posts',
-      });
-
-      if (slugError) throw slugError;
-
       const tagsArray = values.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [];
+      
+      if (isEditMode && initialData) {
+        let slug = initialData.slug;
+        if (values.title !== initialData.title) {
+          const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
+            title: values.title,
+            table_name: 'blog_posts',
+          });
+          if (slugError) throw slugError;
+          slug = slugData;
+        }
 
-      const { error } = await supabase.from('blog_posts').insert({
-        title: values.title,
-        content: values.content,
-        summary: values.summary,
-        category: values.category,
-        tags: tagsArray,
-        featured_image: values.featured_image,
-        status: values.status,
-        meta_title: values.meta_title,
-        meta_description: values.meta_description,
-        meta_keywords: values.meta_keywords,
-        canonical_url: values.canonical_url,
-        slug: slugData,
-      });
+        const updatePayload = {
+          ...values,
+          tags: tagsArray,
+          slug,
+          updated_at: new Date().toISOString(),
+        };
 
-      if (error) throw error;
+        const { error } = await supabase
+          .from('blog_posts')
+          .update(updatePayload)
+          .eq('id', initialData.id);
 
-      toast.success('Blog post created successfully!');
-      form.reset();
+        if (error) throw error;
+        toast.success('Blog post updated successfully!');
+      } else {
+        const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
+          title: values.title,
+          table_name: 'blog_posts',
+        });
+        if (slugError) throw slugError;
+
+        const insertPayload = {
+          ...values,
+          tags: tagsArray,
+          slug: slugData,
+        };
+        const { error } = await supabase.from('blog_posts').insert(insertPayload);
+        if (error) throw error;
+        toast.success('Blog post created successfully!');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['blogPostsAdmin'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCounts'] });
+      if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error('Error creating blog post:', error);
+      console.error('Error saving blog post:', error);
       toast.error(`Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -109,7 +159,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Content</FormLabel>
               <FormControl>
-                <Textarea placeholder="Blog post content (Markdown supported)" rows={10} {...field} />
+                <Textarea placeholder="Blog post content (Markdown supported)" rows={10} {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -122,7 +172,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Summary</FormLabel>
               <FormControl>
-                <Textarea placeholder="Short summary of the post" {...field} />
+                <Textarea placeholder="Short summary of the post" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -135,7 +185,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Category</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Tech" {...field} />
+                <Input placeholder="e.g., Tech" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -148,7 +198,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Tags (comma-separated)</FormLabel>
               <FormControl>
-                <Input placeholder="tech, news, updates" {...field} />
+                <Input placeholder="tech, news, updates" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -161,7 +211,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Featured Image URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/image.png" {...field} />
+                <Input placeholder="https://example.com/image.png" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -174,6 +224,26 @@ export const BlogPostForm = () => {
               onUpload={(url) => form.setValue('featured_image', url, { shouldValidate: true })}
             />
         </div>
+        
+        <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+        />
 
         <h3 className="text-lg font-medium pt-4">SEO</h3>
         <FormField
@@ -183,7 +253,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Meta Title</FormLabel>
               <FormControl>
-                <Input placeholder="SEO Title" {...field} />
+                <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -196,7 +266,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Meta Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="SEO Description" {...field} />
+                <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -209,7 +279,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Meta Keywords</FormLabel>
               <FormControl>
-                <Input placeholder="keyword1, keyword2" {...field} />
+                <Input placeholder="keyword1, keyword2" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -222,7 +292,7 @@ export const BlogPostForm = () => {
             <FormItem>
               <FormLabel>Canonical URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/canonical-url" {...field} />
+                <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -230,7 +300,7 @@ export const BlogPostForm = () => {
         />
         <Button type="submit" disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Create Blog Post
+          {isEditMode ? 'Update Blog Post' : 'Create Blog Post'}
         </Button>
       </form>
     </Form>

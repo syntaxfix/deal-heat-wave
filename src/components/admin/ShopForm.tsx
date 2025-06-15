@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import ImageUpload from './ImageUpload';
+import { useQueryClient } from '@tanstack/react-query';
+import { Database } from '@/integrations/supabase/types';
 
 const shopFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -26,9 +28,18 @@ const shopFormSchema = z.object({
 });
 
 type ShopFormValues = z.infer<typeof shopFormSchema>;
+type Shop = Database['public']['Tables']['shops']['Row'];
 
-export const ShopForm = () => {
+interface ShopFormProps {
+  initialData?: Shop | null;
+  onSuccess?: () => void;
+}
+
+export const ShopForm = ({ initialData, onSuccess }: ShopFormProps) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const isEditMode = !!initialData;
+
   const form = useForm<ShopFormValues>({
     resolver: zodResolver(shopFormSchema),
     defaultValues: {
@@ -46,38 +57,69 @@ export const ShopForm = () => {
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        ...initialData,
+        description: initialData.description ?? '',
+        long_description: initialData.long_description ?? '',
+        website_url: initialData.website_url ?? '',
+        category: initialData.category ?? '',
+        logo_url: initialData.logo_url ?? '',
+        banner_url: initialData.banner_url ?? '',
+        meta_title: initialData.meta_title ?? '',
+        meta_description: initialData.meta_description ?? '',
+        meta_keywords: initialData.meta_keywords ?? '',
+        canonical_url: initialData.canonical_url ?? '',
+      });
+    } else {
+      form.reset();
+    }
+  }, [initialData, form]);
+
   const onSubmit: SubmitHandler<ShopFormValues> = async (values) => {
     setLoading(true);
     try {
-      const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
-        title: values.name,
-        table_name: 'shops',
-      });
+      if (isEditMode && initialData) {
+        let slug = initialData.slug;
+        if (values.name !== initialData.name) {
+          const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
+            title: values.name,
+            table_name: 'shops',
+          });
+          if (slugError) throw slugError;
+          slug = slugData;
+        }
 
-      if (slugError) throw slugError;
+        const { error } = await supabase
+          .from('shops')
+          .update({ ...values, slug })
+          .eq('id', initialData.id);
 
-      const { error } = await supabase.from('shops').insert({
-        name: values.name,
-        description: values.description,
-        long_description: values.long_description,
-        website_url: values.website_url,
-        category: values.category,
-        logo_url: values.logo_url,
-        banner_url: values.banner_url,
-        meta_title: values.meta_title,
-        meta_description: values.meta_description,
-        meta_keywords: values.meta_keywords,
-        canonical_url: values.canonical_url,
-        slug: slugData,
-      });
+        if (error) throw error;
+        toast.success('Shop updated successfully!');
+      } else {
+        const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
+          title: values.name,
+          table_name: 'shops',
+        });
+        if (slugError) throw slugError;
 
-      if (error) {
-        throw error;
+        const { error } = await supabase.from('shops').insert({
+          ...values,
+          slug: slugData,
+        });
+
+        if (error) throw error;
+        toast.success('Shop created successfully!');
       }
-      toast.success('Shop created successfully!');
-      form.reset();
+
+      queryClient.invalidateQueries({ queryKey: ['shopsAdmin'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardCounts'] });
+      if (onSuccess) onSuccess();
+
     } catch (error: any) {
-      console.error('Error creating shop:', error);
+      console.error('Error saving shop:', error);
       toast.error(`Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -107,7 +149,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="Short description" {...field} />
+                <Textarea placeholder="Short description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -120,7 +162,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Long Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="Detailed description" {...field} />
+                <Textarea placeholder="Detailed description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -133,7 +175,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Website URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com" {...field} />
+                <Input placeholder="https://example.com" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -146,7 +188,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Category</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Electronics" {...field} />
+                <Input placeholder="e.g., Electronics" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -159,7 +201,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Logo URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/logo.png" {...field} />
+                <Input placeholder="https://example.com/logo.png" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -180,7 +222,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Banner URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/banner.png" {...field} />
+                <Input placeholder="https://example.com/banner.png" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -202,7 +244,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Meta Title</FormLabel>
               <FormControl>
-                <Input placeholder="SEO Title" {...field} />
+                <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -215,7 +257,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Meta Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="SEO Description" {...field} />
+                <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -228,7 +270,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Meta Keywords</FormLabel>
               <FormControl>
-                <Input placeholder="keyword1, keyword2" {...field} />
+                <Input placeholder="keyword1, keyword2" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -241,7 +283,7 @@ export const ShopForm = () => {
             <FormItem>
               <FormLabel>Canonical URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/canonical-url" {...field} />
+                <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -249,7 +291,7 @@ export const ShopForm = () => {
         />
         <Button type="submit" disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Create Shop
+          {isEditMode ? 'Update Shop' : 'Create Shop'}
         </Button>
       </form>
     </Form>
