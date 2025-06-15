@@ -76,33 +76,29 @@ const DealListings = ({
       `)
       .eq('status', 'approved');
 
-    // Apply filters by fetching IDs in parallel for performance
-    const categoryPromise = (categorySlug && categorySlug !== 'all' && categorySlug !== '')
-      ? supabase.from('categories').select('id').eq('slug', categorySlug).single()
-      : Promise.resolve({ data: null, error: null });
-
-    const shopPromise = (shopSlug && shopSlug !== 'all' && shopSlug !== '')
-      ? supabase.from('shops').select('id').eq('slug', shopSlug).single()
-      : Promise.resolve({ data: null, error: null });
-    
-    const [categoryResult, shopResult] = await Promise.all([categoryPromise, shopPromise]);
-    
+    // Apply filters
     if (categorySlug && categorySlug !== 'all' && categorySlug !== '') {
-        if (categoryResult.data) {
-            query = query.eq('category_id', categoryResult.data.id);
-        } else {
-            console.log('Category not found for slug:', categorySlug);
-            setDeals([]); setHasMore(false); setLoading(false); return;
-        }
+      const { data: categoryData } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('slug', categorySlug)
+        .single();
+      
+      if (categoryData) {
+        query = query.eq('category_id', categoryData.id);
+      }
     }
-
+    
     if (shopSlug && shopSlug !== 'all' && shopSlug !== '') {
-        if (shopResult.data) {
-            query = query.eq('shop_id', shopResult.data.id);
-        } else {
-            console.log('Shop not found for slug:', shopSlug);
-            setDeals([]); setHasMore(false); setLoading(false); return;
-        }
+      const { data: shopData } = await supabase
+        .from('shops')
+        .select('id')
+        .eq('slug', shopSlug)
+        .single();
+      
+      if (shopData) {
+        query = query.eq('shop_id', shopData.id);
+      }
     }
     
     if (searchQuery) {
@@ -138,7 +134,6 @@ const DealListings = ({
     if (error) {
       console.error('Error fetching deals:', error);
     } else {
-      console.log('Fetched deals:', data?.length || 0);
       const mappedDeals = (data || []).map(deal => ({
         ...deal,
         summary: deal.description || ''
