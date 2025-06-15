@@ -117,6 +117,7 @@ export const BlogPostForm = ({ initialData, onSuccess }: BlogPostFormProps) => {
 
         const insertPayload = {
           ...values,
+          title: values.title,
           tags: tagsArray,
           slug: slugData,
         };

@@ -107,6 +107,7 @@ export const ShopForm = ({ initialData, onSuccess }: ShopFormProps) => {
 
         const { error } = await supabase.from('shops').insert({
           ...values,
+          name: values.name,
           slug: slugData,
         });
 
