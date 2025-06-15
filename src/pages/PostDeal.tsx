@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -82,11 +81,12 @@ const PostDeal = () => {
     return 0;
   };
 
-  const generateSlug = (title: string) => {
+  const generateSlugFromTitle = (title: string) => {
     return title
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
       .trim();
   };
 
@@ -113,14 +113,10 @@ const PostDeal = () => {
       }
 
       const discountPercentage = calculateDiscount();
-      const baseSlug = generateSlug(formData.title);
       
-      // Generate unique slug using the correct function name
-      const { data: uniqueSlug } = await supabase
-        .rpc('generate_unique_slug', {
-          title: formData.title,
-          table_name: 'deals'
-        });
+      // Generate a unique slug using title + timestamp
+      const baseSlug = generateSlugFromTitle(formData.title);
+      const uniqueSlug = `${baseSlug}-${Date.now()}`;
 
       const dealData = {
         title: formData.title.trim(),
@@ -135,7 +131,7 @@ const PostDeal = () => {
         expires_at: formData.expires_at || null,
         user_id: user.id,
         status: 'pending',
-        slug: uniqueSlug || `${baseSlug}-${Date.now()}`,
+        slug: uniqueSlug,
         heat_score: 0,
         upvotes: 0,
         downvotes: 0,

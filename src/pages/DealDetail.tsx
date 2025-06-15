@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -67,6 +66,8 @@ const DealDetail = () => {
 
   const fetchDeal = async () => {
     try {
+      console.log('Fetching deal with slug:', slug);
+      
       const { data, error } = await supabase
         .from('deals')
         .select(`
@@ -77,7 +78,7 @@ const DealDetail = () => {
         `)
         .eq('slug', slug)
         .eq('status', 'approved')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching deal:', error);
@@ -85,7 +86,10 @@ const DealDetail = () => {
       }
 
       if (data) {
+        console.log('Found deal:', data);
         setDeal(data as Deal);
+      } else {
+        console.log('No deal found with slug:', slug);
       }
     } catch (error) {
       console.error('Error fetching deal:', error);
