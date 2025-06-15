@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { Plus, Edit, Trash2, Store, BookOpen, FileText, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Store, BookOpen, FileText, Users, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/admin/EmptyState';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
@@ -54,6 +54,19 @@ interface User {
   role: 'user' | 'admin';
 }
 
+interface Deal {
+  id: string;
+  created_at: string;
+  title: string;
+  description: string;
+  original_price: number;
+  discounted_price: number;
+  status: 'pending' | 'approved' | 'rejected';
+  heat_score: number;
+  upvotes: number;
+  downvotes: number;
+}
+
 const ITEMS_PER_PAGE = 10;
 
 const RootDashboard = () => {
@@ -64,23 +77,27 @@ const RootDashboard = () => {
   const [blogsPage, setBlogsPage] = useState(1);
   const [pagesPage, setPagesPage] = useState(1);
   const [usersPage, setUsersPage] = useState(1);
+  const [dealsPage, setDealsPage] = useState(1);
 
   // Dialog states
   const [isShopDialogOpen, setIsShopDialogOpen] = useState(false);
   const [isBlogDialogOpen, setIsBlogDialogOpen] = useState(false);
   const [isPageDialogOpen, setIsPageDialogOpen] = useState(false);
+  const [isDealDialogOpen, setIsDealDialogOpen] = useState(false);
 
   // Form states
   const [shopForm, setShopForm] = useState<Partial<Shop>>({});
   const [blogForm, setBlogForm] = useState<Partial<Blog>>({});
   const [pageForm, setPageForm] = useState<Partial<Page>>({});
   const [userForm, setUserForm] = useState<Partial<User>>({});
+  const [dealForm, setDealForm] = useState<Partial<Deal>>({});
 
   // Editing states
   const [editingShopId, setEditingShopId] = useState<string | null>(null);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingDealId, setEditingDealId] = useState<string | null>(null);
 
   // Shops queries with pagination
   const { data: shopsData, isLoading: shopsLoading } = useQuery({
@@ -154,20 +171,41 @@ const RootDashboard = () => {
     }
   });
 
+  // Deals queries with pagination
+  const { data: dealsData, isLoading: dealsLoading } = useQuery({
+    queryKey: ['admin-deals', dealsPage],
+    queryFn: async () => {
+      const from = (dealsPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
+      const { data, error, count } = await supabase
+        .from('deals')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
+      if (error) throw error;
+      return { data: data || [], total: count || 0 };
+    }
+  });
+
   const shops = shopsData?.data || [];
   const blogs = blogsData?.data || [];
   const pages = pagesData?.data || [];
   const users = usersData?.data || [];
+  const deals = dealsData?.data || [];
 
   const totalShops = shopsData?.total || 0;
   const totalBlogs = blogsData?.total || 0;
   const totalPages = pagesData?.total || 0;
   const totalUsers = usersData?.total || 0;
+  const totalDeals = dealsData?.total || 0;
 
   const totalShopsPages = Math.ceil(totalShops / ITEMS_PER_PAGE);
   const totalBlogsPages = Math.ceil(totalBlogs / ITEMS_PER_PAGE);
   const totalPagesPages = Math.ceil(totalPages / ITEMS_PER_PAGE);
   const totalUsersPages = Math.ceil(totalUsers / ITEMS_PER_PAGE);
+  const totalDealsPages = Math.ceil(totalDeals / ITEMS_PER_PAGE);
 
   // Mutation functions
   const createShopMutation = useMutation({
@@ -336,6 +374,39 @@ const RootDashboard = () => {
     },
   });
 
+  const updateDealMutation = useMutation({
+    mutationFn: async (updatedDeal: Deal) => {
+      const { data, error } = await supabase.from('deals').update(updatedDeal).eq('id', updatedDeal.id);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+      setIsDealDialogOpen(false);
+      setDealForm({});
+      setEditingDealId(null);
+      toast.success('Deal updated successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update deal: ${error.message}`);
+    },
+  });
+
+  const deleteDealMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.from('deals').delete().eq('id', id);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-deals'] });
+      toast.success('Deal deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to delete deal: ${error.message}`);
+    },
+  });
+
   // Form handlers and utility functions
   const handleShopInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setShopForm({ ...shopForm, [e.target.name]: e.target.value });
@@ -351,6 +422,10 @@ const RootDashboard = () => {
 
   const handleUserInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setUserForm({ ...userForm, [e.target.name]: e.target.value });
+  };
+
+  const handleDealInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setDealForm({ ...dealForm, [e.target.name]: e.target.value });
   };
 
   const generateSlug = (title: string) => {
@@ -393,6 +468,10 @@ const RootDashboard = () => {
     updateUserMutation.mutate(userForm as User);
   };
 
+  const handleDealEdit = () => {
+    updateDealMutation.mutate(dealForm as Deal);
+  };
+
   const handleDeleteShop = (id: string) => {
     deleteShopMutation.mutate(id);
   };
@@ -403,6 +482,10 @@ const RootDashboard = () => {
 
   const handleDeletePage = (id: string) => {
     deletePageMutation.mutate(id);
+  };
+
+  const handleDeleteDeal = (id: string) => {
+    deleteDealMutation.mutate(id);
   };
 
   const handleEditShop = (shop: Shop) => {
@@ -432,6 +515,15 @@ const RootDashboard = () => {
       role: user.role as 'user' | 'admin'
     });
     setEditingUserId(user.id);
+  };
+
+  const handleEditDeal = (deal: any) => {
+    setDealForm({
+      ...deal,
+      status: deal.status as 'pending' | 'approved' | 'rejected'
+    });
+    setEditingDealId(deal.id);
+    setIsDealDialogOpen(true);
   };
 
   const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
@@ -714,20 +806,100 @@ const RootDashboard = () => {
     );
   };
 
+  const renderDealsContent = () => {
+    if (dealsLoading) {
+      return <TableSkeleton rows={5} columns={6} />;
+    }
+
+    if (deals.length === 0 && dealsPage === 1) {
+      return (
+        <EmptyState
+          title="No deals found"
+          description="Deals will appear here as users submit them for review."
+          actionLabel="Refresh"
+          onAction={() => queryClient.invalidateQueries({ queryKey: ['admin-deals'] })}
+          icon={<Tag className="h-12 w-12" />}
+        />
+      );
+    }
+
+    return (
+      <>
+        <div className="mb-4 text-sm text-muted-foreground">
+          Showing {(dealsPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(dealsPage * ITEMS_PER_PAGE, totalDeals)} of {totalDeals} deals
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Original Price</TableHead>
+              <TableHead>Discounted Price</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Heat Score</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {deals.map((deal) => (
+              <TableRow key={deal.id}>
+                <TableCell className="font-medium">{deal.title}</TableCell>
+                <TableCell>${deal.original_price}</TableCell>
+                <TableCell>${deal.discounted_price}</TableCell>
+                <TableCell>
+                  <Badge variant={
+                    deal.status === 'approved' ? "default" : 
+                    deal.status === 'rejected' ? "destructive" : "secondary"
+                  }>
+                    {deal.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{deal.heat_score}</TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => handleEditDeal(deal)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleDeleteDeal(deal.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {renderPagination(dealsPage, totalDealsPages, setDealsPage)}
+      </>
+    );
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Root Dashboard</h1>
-        <p className="text-muted-foreground">Manage shops, blogs, pages, and users</p>
+        <p className="text-muted-foreground">Manage deals, shops, blogs, pages, and users</p>
       </div>
 
-      <Tabs defaultValue="shops" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="deals" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="deals">Deals</TabsTrigger>
           <TabsTrigger value="shops">Shops</TabsTrigger>
           <TabsTrigger value="blogs">Blogs</TabsTrigger>
           <TabsTrigger value="pages">Pages</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="deals" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Deals Management</CardTitle>
+              <CardDescription>Manage and moderate user-submitted deals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderDealsContent()}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="shops" className="space-y-4">
           <Card>
@@ -1008,6 +1180,39 @@ const RootDashboard = () => {
           <DialogFooter>
             <Button type="button" onClick={handleUserEdit} disabled={updateUserMutation.isPending}>
               Update User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDealDialogOpen} onOpenChange={setIsDealDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Deal</DialogTitle>
+            <DialogDescription>
+              Edit deal details and status.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">
+                Status
+              </Label>
+              <Select onValueChange={(value) => setDealForm({ ...dealForm, status: value as 'pending' | 'approved' | 'rejected' })} defaultValue={dealForm.status}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={handleDealEdit} disabled={updateDealMutation.isPending}>
+              Update Deal
             </Button>
           </DialogFooter>
         </DialogContent>
