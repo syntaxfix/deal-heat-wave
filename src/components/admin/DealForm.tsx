@@ -12,6 +12,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import ImageUpload from './ImageUpload';
+import { useQueryClient } from '@tanstack/react-query';
+import { Database } from '@/integrations/supabase/types';
+import { useAuth } from '@/hooks/useAuth';
 
 const dealFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -31,11 +34,21 @@ const dealFormSchema = z.object({
 
 type DealFormValues = z.infer<typeof dealFormSchema>;
 type DropdownItem = { id: string; name: string };
+type Deal = Database['public']['Tables']['deals']['Row'];
 
-export const DealForm = () => {
+interface DealFormProps {
+  initialData?: Deal | null;
+  onSuccess?: () => void;
+}
+
+export const DealForm = ({ initialData, onSuccess }: DealFormProps) => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<DropdownItem[]>([]);
   const [shops, setShops] = useState<DropdownItem[]>([]);
+
+  const isEditMode = !!initialData;
 
   useEffect(() => {
     const fetchDropdownData = async () => {
@@ -64,37 +77,70 @@ export const DealForm = () => {
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        ...initialData,
+        description: initialData.description ?? '',
+        image_url: initialData.image_url ?? '',
+        affiliate_link: initialData.affiliate_link ?? '',
+        original_price: initialData.original_price ?? undefined,
+        expires_at: initialData.expires_at ? new Date(initialData.expires_at).toISOString().substring(0, 16) : '',
+        meta_title: initialData.meta_title ?? '',
+        meta_description: initialData.meta_description ?? '',
+        meta_keywords: initialData.meta_keywords ?? '',
+        canonical_url: initialData.canonical_url ?? '',
+      });
+    } else {
+      form.reset({
+        title: '',
+        description: '',
+        image_url: '',
+        affiliate_link: '',
+        meta_title: '',
+        meta_description: '',
+        meta_keywords: '',
+        canonical_url: '',
+      });
+    }
+  }, [initialData, form]);
+
   const onSubmit: SubmitHandler<DealFormValues> = async (values) => {
     setLoading(true);
     try {
-      const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
-        title: values.title,
-        table_name: 'deals',
-      });
-      if (slugError) throw slugError;
-
-      const { error } = await supabase.from('deals').insert({
-        title: values.title,
-        description: values.description,
-        image_url: values.image_url,
-        affiliate_link: values.affiliate_link,
-        original_price: values.original_price,
-        discounted_price: values.discounted_price,
-        category_id: values.category_id,
-        shop_id: values.shop_id,
+      const dealData = {
+        ...values,
+        user_id: user?.id,
         expires_at: values.expires_at ? new Date(values.expires_at).toISOString() : null,
-        meta_title: values.meta_title,
-        meta_description: values.meta_description,
-        meta_keywords: values.meta_keywords,
-        canonical_url: values.canonical_url,
-        slug: slugData,
-      });
+      };
 
-      if (error) throw error;
-      toast.success('Deal created successfully!');
-      form.reset();
+      if (isEditMode && initialData) {
+        const { error } = await supabase
+          .from('deals')
+          .update(dealData)
+          .eq('id', initialData.id);
+
+        if (error) throw error;
+        toast.success('Deal updated successfully!');
+      } else {
+        const { data: slugData, error: slugError } = await supabase.rpc('generate_unique_slug', {
+          title: values.title,
+          table_name: 'deals',
+        });
+        if (slugError) throw slugError;
+
+        const { error } = await supabase.from('deals').insert({
+          ...dealData,
+          slug: slugData,
+        });
+
+        if (error) throw error;
+        toast.success('Deal created successfully!');
+      }
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      if (onSuccess) onSuccess();
     } catch (error: any) {
-      console.error('Error creating deal:', error);
+      console.error('Error saving deal:', error);
       toast.error(`Error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -121,7 +167,7 @@ export const DealForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
-              <FormControl><Textarea placeholder="Deal description" {...field} /></FormControl>
+              <FormControl><Textarea placeholder="Deal description" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -170,7 +216,7 @@ export const DealForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Original Price</FormLabel>
-              <FormControl><Input type="number" placeholder="99.99" {...field} /></FormControl>
+              <FormControl><Input type="number" step="0.01" placeholder="99.99" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -181,7 +227,7 @@ export const DealForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Discounted Price</FormLabel>
-              <FormControl><Input type="number" placeholder="49.99" {...field} /></FormControl>
+              <FormControl><Input type="number" step="0.01" placeholder="49.99" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -192,7 +238,7 @@ export const DealForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Affiliate Link</FormLabel>
-              <FormControl><Input placeholder="https://a.co/deal" {...field} /></FormControl>
+              <FormControl><Input placeholder="https://a.co/deal" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -203,7 +249,7 @@ export const DealForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Expires At</FormLabel>
-              <FormControl><Input type="datetime-local" {...field} /></FormControl>
+              <FormControl><Input type="datetime-local" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -214,7 +260,7 @@ export const DealForm = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Image URL</FormLabel>
-              <FormControl><Input placeholder="https://example.com/image.png" {...field} /></FormControl>
+              <FormControl><Input placeholder="https://example.com/image.png" {...field} value={field.value ?? ''} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -235,7 +281,7 @@ export const DealForm = () => {
             <FormItem>
               <FormLabel>Meta Title</FormLabel>
               <FormControl>
-                <Input placeholder="SEO Title" {...field} />
+                <Input placeholder="SEO Title" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -248,7 +294,7 @@ export const DealForm = () => {
             <FormItem>
               <FormLabel>Meta Description</FormLabel>
               <FormControl>
-                <Textarea placeholder="SEO Description" {...field} />
+                <Textarea placeholder="SEO Description" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -261,7 +307,7 @@ export const DealForm = () => {
             <FormItem>
               <FormLabel>Meta Keywords</FormLabel>
               <FormControl>
-                <Input placeholder="keyword1, keyword2" {...field} />
+                <Input placeholder="keyword1, keyword2" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -274,7 +320,7 @@ export const DealForm = () => {
             <FormItem>
               <FormLabel>Canonical URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/canonical-url" {...field} />
+                <Input placeholder="https://example.com/canonical-url" {...field} value={field.value ?? ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -283,7 +329,7 @@ export const DealForm = () => {
 
         <Button type="submit" disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Create Deal
+          {isEditMode ? 'Update Deal' : 'Create Deal'}
         </Button>
       </form>
     </Form>

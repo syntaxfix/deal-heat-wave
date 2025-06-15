@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Shield, Check, X, Eye } from 'lucide-react';
+import { Shield, Check, X } from 'lucide-react';
 import Header from '@/components/Header';
 
 interface Deal {
@@ -21,19 +20,10 @@ interface Deal {
   profiles: { username: string; full_name: string } | null;
 }
 
-interface User {
-  id: string;
-  username: string;
-  full_name: string;
-  role: string;
-  created_at: string;
-}
-
 export default function Admin() {
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [pendingDeals, setPendingDeals] = useState<Deal[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -58,7 +48,6 @@ export default function Admin() {
 
     setUserProfile(profile);
     fetchPendingDeals();
-    fetchUsers();
   };
 
   const fetchPendingDeals = async () => {
@@ -104,19 +93,6 @@ export default function Admin() {
     setPendingDeals(dealsWithProfiles);
   };
 
-  const fetchUsers = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching users:', error);
-    } else {
-      setUsers(data || []);
-    }
-  };
-
   const handleDealAction = async (dealId: string, action: 'approved' | 'rejected') => {
     setIsLoading(true);
 
@@ -130,24 +106,6 @@ export default function Admin() {
     } else {
       toast.success(`Deal ${action} successfully!`);
       fetchPendingDeals();
-    }
-
-    setIsLoading(false);
-  };
-
-  const updateUserRole = async (userId: string, newRole: string) => {
-    setIsLoading(true);
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ role: newRole })
-      .eq('id', userId);
-
-    if (error) {
-      toast.error('Failed to update user role: ' + error.message);
-    } else {
-      toast.success('User role updated successfully!');
-      fetchUsers();
     }
 
     setIsLoading(false);
@@ -187,7 +145,6 @@ export default function Admin() {
         <Tabs defaultValue="deals" className="space-y-6">
           <TabsList>
             <TabsTrigger value="deals">Pending Deals ({pendingDeals.length})</TabsTrigger>
-            <TabsTrigger value="users">Users ({users.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="deals">
@@ -249,45 +206,6 @@ export default function Admin() {
                   </Card>
                 ))
               )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="users">
-            <div className="space-y-4">
-              {users.map((user) => (
-                <Card key={user.id}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">{user.full_name || 'Unnamed User'}</h3>
-                        <p className="text-sm text-gray-600">@{user.username}</p>
-                        <p className="text-xs text-gray-500">
-                          Joined {new Date(user.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role}
-                        </Badge>
-                        {(userProfile.role === 'admin' || userProfile.role === 'root_admin') && user.id !== userProfile.id && (
-                          <select
-                            value={user.role}
-                            onChange={(e) => updateUserRole(user.id, e.target.value)}
-                            className="text-sm border rounded px-2 py-1"
-                            disabled={isLoading}
-                          >
-                            <option value="user">User</option>
-                            <option value="moderator">Moderator</option>
-                            {userProfile.role === 'root_admin' && (
-                              <option value="admin">Admin</option>
-                            )}
-                          </select>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
             </div>
           </TabsContent>
         </Tabs>
