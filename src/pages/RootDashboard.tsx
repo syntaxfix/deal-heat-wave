@@ -31,7 +31,10 @@ import {
   Edit,
   Trash2,
   Check,
-  X
+  X,
+  Store,
+  FileText,
+  Globe
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -89,6 +92,9 @@ interface BlogPost {
   status: string;
   created_at: string;
   category?: string;
+  content?: string;
+  summary?: string;
+  featured_image?: string;
 }
 
 interface StaticPage {
@@ -97,6 +103,7 @@ interface StaticPage {
   slug: string;
   is_visible: boolean;
   created_at: string;
+  content?: string;
 }
 
 interface User {
@@ -149,6 +156,40 @@ const RootDashboard = () => {
     shop_id: '',
     expires_at: '',
     status: 'approved'
+  });
+
+  // Shop form states
+  const [showShopDialog, setShowShopDialog] = useState(false);
+  const [editingShop, setEditingShop] = useState<Shop | null>(null);
+  const [shopForm, setShopForm] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    logo_url: '',
+    website_url: ''
+  });
+
+  // Blog form states
+  const [showBlogDialog, setShowBlogDialog] = useState(false);
+  const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
+  const [blogForm, setBlogForm] = useState({
+    title: '',
+    slug: '',
+    content: '',
+    summary: '',
+    featured_image: '',
+    category: '',
+    status: 'published'
+  });
+
+  // Page form states
+  const [showPageDialog, setShowPageDialog] = useState(false);
+  const [editingPage, setEditingPage] = useState<StaticPage | null>(null);
+  const [pageForm, setPageForm] = useState({
+    title: '',
+    slug: '',
+    content: '',
+    is_visible: true
   });
 
   useEffect(() => {
@@ -303,7 +344,7 @@ const RootDashboard = () => {
   const fetchStaticPages = async () => {
     const { data } = await supabase
       .from('static_pages')
-      .select('id, title, slug, is_visible, created_at')
+      .select('id, title, slug, is_visible, created_at, content')
       .order('created_at', { ascending: false });
     
     if (data) setStaticPages(data);
@@ -361,6 +402,303 @@ const RootDashboard = () => {
     }
   };
 
+  // Shop CRUD functions
+  const generateSlugFromTitle = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+  };
+
+  const resetShopForm = () => {
+    setShopForm({
+      name: '',
+      slug: '',
+      description: '',
+      logo_url: '',
+      website_url: ''
+    });
+    setEditingShop(null);
+  };
+
+  const openShopDialog = (shop?: Shop) => {
+    if (shop) {
+      setEditingShop(shop);
+      setShopForm({
+        name: shop.name,
+        slug: shop.slug,
+        description: shop.description || '',
+        logo_url: shop.logo_url || '',
+        website_url: shop.website_url || ''
+      });
+    } else {
+      resetShopForm();
+    }
+    setShowShopDialog(true);
+  };
+
+  const handleSaveShop = async () => {
+    try {
+      if (!shopForm.name.trim()) {
+        toast.error('Shop name is required');
+        return;
+      }
+
+      const slug = shopForm.slug || generateSlugFromTitle(shopForm.name);
+
+      const shopData = {
+        name: shopForm.name.trim(),
+        slug: slug,
+        description: shopForm.description.trim() || null,
+        logo_url: shopForm.logo_url.trim() || null,
+        website_url: shopForm.website_url.trim() || null
+      };
+
+      let error;
+      if (editingShop) {
+        ({ error } = await supabase
+          .from('shops')
+          .update(shopData)
+          .eq('id', editingShop.id));
+      } else {
+        ({ error } = await supabase
+          .from('shops')
+          .insert(shopData));
+      }
+
+      if (error) throw error;
+
+      toast.success(`Shop ${editingShop ? 'updated' : 'created'} successfully`);
+      setShowShopDialog(false);
+      resetShopForm();
+      fetchShops();
+      fetchDashboardStats();
+    } catch (error) {
+      console.error('Error saving shop:', error);
+      toast.error(`Failed to ${editingShop ? 'update' : 'create'} shop`);
+    }
+  };
+
+  const handleDeleteShop = async (shopId: string) => {
+    if (!confirm('Are you sure you want to delete this shop?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .delete()
+        .eq('id', shopId);
+
+      if (error) throw error;
+
+      toast.success('Shop deleted successfully');
+      fetchShops();
+      fetchDashboardStats();
+    } catch (error) {
+      console.error('Error deleting shop:', error);
+      toast.error('Failed to delete shop');
+    }
+  };
+
+  // Blog CRUD functions
+  const resetBlogForm = () => {
+    setBlogForm({
+      title: '',
+      slug: '',
+      content: '',
+      summary: '',
+      featured_image: '',
+      category: '',
+      status: 'published'
+    });
+    setEditingBlog(null);
+  };
+
+  const openBlogDialog = (blog?: BlogPost) => {
+    if (blog) {
+      setEditingBlog(blog);
+      setBlogForm({
+        title: blog.title,
+        slug: blog.slug,
+        content: blog.content || '',
+        summary: blog.summary || '',
+        featured_image: blog.featured_image || '',
+        category: blog.category || '',
+        status: blog.status
+      });
+    } else {
+      resetBlogForm();
+    }
+    setShowBlogDialog(true);
+  };
+
+  const handleSaveBlog = async () => {
+    try {
+      if (!blogForm.title.trim()) {
+        toast.error('Blog title is required');
+        return;
+      }
+
+      const slug = blogForm.slug || generateSlugFromTitle(blogForm.title);
+
+      const blogData = {
+        title: blogForm.title.trim(),
+        slug: slug,
+        content: blogForm.content.trim() || null,
+        summary: blogForm.summary.trim() || null,
+        featured_image: blogForm.featured_image.trim() || null,
+        category: blogForm.category.trim() || null,
+        status: blogForm.status
+      };
+
+      let error;
+      if (editingBlog) {
+        ({ error } = await supabase
+          .from('blog_posts')
+          .update(blogData)
+          .eq('id', editingBlog.id));
+      } else {
+        ({ error } = await supabase
+          .from('blog_posts')
+          .insert(blogData));
+      }
+
+      if (error) throw error;
+
+      toast.success(`Blog post ${editingBlog ? 'updated' : 'created'} successfully`);
+      setShowBlogDialog(false);
+      resetBlogForm();
+      fetchBlogPosts();
+      fetchDashboardStats();
+    } catch (error) {
+      console.error('Error saving blog post:', error);
+      toast.error(`Failed to ${editingBlog ? 'update' : 'create'} blog post`);
+    }
+  };
+
+  const handleDeleteBlog = async (blogId: string) => {
+    if (!confirm('Are you sure you want to delete this blog post?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('blog_posts')
+        .delete()
+        .eq('id', blogId);
+
+      if (error) throw error;
+
+      toast.success('Blog post deleted successfully');
+      fetchBlogPosts();
+      fetchDashboardStats();
+    } catch (error) {
+      console.error('Error deleting blog post:', error);
+      toast.error('Failed to delete blog post');
+    }
+  };
+
+  // Page CRUD functions
+  const resetPageForm = () => {
+    setPageForm({
+      title: '',
+      slug: '',
+      content: '',
+      is_visible: true
+    });
+    setEditingPage(null);
+  };
+
+  const openPageDialog = (page?: StaticPage) => {
+    if (page) {
+      setEditingPage(page);
+      setPageForm({
+        title: page.title,
+        slug: page.slug,
+        content: page.content || '',
+        is_visible: page.is_visible
+      });
+    } else {
+      resetPageForm();
+    }
+    setShowPageDialog(true);
+  };
+
+  const handleSavePage = async () => {
+    try {
+      if (!pageForm.title.trim()) {
+        toast.error('Page title is required');
+        return;
+      }
+
+      const slug = pageForm.slug || generateSlugFromTitle(pageForm.title);
+
+      const pageData = {
+        title: pageForm.title.trim(),
+        slug: slug,
+        content: pageForm.content.trim() || null,
+        is_visible: pageForm.is_visible
+      };
+
+      let error;
+      if (editingPage) {
+        ({ error } = await supabase
+          .from('static_pages')
+          .update(pageData)
+          .eq('id', editingPage.id));
+      } else {
+        ({ error } = await supabase
+          .from('static_pages')
+          .insert(pageData));
+      }
+
+      if (error) throw error;
+
+      toast.success(`Page ${editingPage ? 'updated' : 'created'} successfully`);
+      setShowPageDialog(false);
+      resetPageForm();
+      fetchStaticPages();
+    } catch (error) {
+      console.error('Error saving page:', error);
+      toast.error(`Failed to ${editingPage ? 'update' : 'create'} page`);
+    }
+  };
+
+  const handleDeletePage = async (pageId: string) => {
+    if (!confirm('Are you sure you want to delete this page?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('static_pages')
+        .delete()
+        .eq('id', pageId);
+
+      if (error) throw error;
+
+      toast.success('Page deleted successfully');
+      fetchStaticPages();
+    } catch (error) {
+      console.error('Error deleting page:', error);
+      toast.error('Failed to delete page');
+    }
+  };
+
+  const handleUserRoleUpdate = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success('User role updated successfully');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast.error('Failed to update user role');
+    }
+  };
+
   const resetDealForm = () => {
     setDealForm({
       title: '',
@@ -413,15 +751,6 @@ const RootDashboard = () => {
     // If only date is provided (no time), add midnight
     const dateWithTime = dateString.includes('T') ? dateString : `${dateString}T00:00`;
     return new Date(dateWithTime).toISOString();
-  };
-
-  const generateSlugFromTitle = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
   };
 
   const calculateDiscount = () => {
@@ -825,49 +1154,259 @@ const RootDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Other tabs simplified for now */}
+          {/* Shop Management */}
           <TabsContent value="shops">
             <Card className="border-gray-700 bg-gray-800">
               <CardHeader>
-                <CardTitle className="text-white">Shop Management</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Manage shops and store information
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-white">Shop Management</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Manage shops and store information
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => openShopDialog()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Shop
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400">Shop management interface will be implemented here...</p>
+                {shops.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-300 mb-2">No shops found</h3>
+                    <p className="text-gray-400">Create your first shop to get started!</p>
+                  </div>
+                ) : (
+                  <div className="border border-gray-600 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-600">
+                          <TableHead className="text-gray-300">Name</TableHead>
+                          <TableHead className="text-gray-300">Slug</TableHead>
+                          <TableHead className="text-gray-300">Website</TableHead>
+                          <TableHead className="text-gray-300">Created</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {shops.map((shop) => (
+                          <TableRow key={shop.id} className="border-gray-600">
+                            <TableCell className="text-white">
+                              <div className="flex items-center space-x-3">
+                                {shop.logo_url && (
+                                  <img src={shop.logo_url} alt={shop.name} className="h-8 w-8 rounded" />
+                                )}
+                                <div>
+                                  <div className="font-medium">{shop.name}</div>
+                                  {shop.description && (
+                                    <div className="text-sm text-gray-400">{shop.description.slice(0, 50)}...</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-gray-300">{shop.slug}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {shop.website_url ? (
+                                <a href={shop.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                  {shop.website_url}
+                                </a>
+                              ) : '-'}
+                            </TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(shop.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openShopDialog(shop)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteShop(shop.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Blog Management */}
           <TabsContent value="blogs">
             <Card className="border-gray-700 bg-gray-800">
               <CardHeader>
-                <CardTitle className="text-white">Blog Management</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Manage blog posts and content
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-white">Blog Management</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Manage blog posts and content
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => openBlogDialog()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Blog Post
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400">Blog management interface will be implemented here...</p>
+                {blogPosts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-300 mb-2">No blog posts found</h3>
+                    <p className="text-gray-400">Create your first blog post to get started!</p>
+                  </div>
+                ) : (
+                  <div className="border border-gray-600 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-600">
+                          <TableHead className="text-gray-300">Title</TableHead>
+                          <TableHead className="text-gray-300">Status</TableHead>
+                          <TableHead className="text-gray-300">Category</TableHead>
+                          <TableHead className="text-gray-300">Created</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {blogPosts.map((blog) => (
+                          <TableRow key={blog.id} className="border-gray-600">
+                            <TableCell className="text-white">
+                              <div>
+                                <div className="font-medium">{blog.title}</div>
+                                <div className="text-sm text-gray-400">/{blog.slug}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={blog.status === 'published' ? 'default' : 'secondary'}>
+                                {blog.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-gray-300">{blog.category || '-'}</TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(blog.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openBlogDialog(blog)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteBlog(blog.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Page Management */}
           <TabsContent value="pages">
             <Card className="border-gray-700 bg-gray-800">
               <CardHeader>
-                <CardTitle className="text-white">Static Pages</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Manage static pages like About, Privacy Policy, etc.
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-white">Static Pages</CardTitle>
+                    <CardDescription className="text-gray-400">
+                      Manage static pages like About, Privacy Policy, etc.
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => openPageDialog()}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Page
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400">Static pages management interface will be implemented here...</p>
+                {staticPages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Globe className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-300 mb-2">No pages found</h3>
+                    <p className="text-gray-400">Create your first page to get started!</p>
+                  </div>
+                ) : (
+                  <div className="border border-gray-600 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-600">
+                          <TableHead className="text-gray-300">Title</TableHead>
+                          <TableHead className="text-gray-300">Slug</TableHead>
+                          <TableHead className="text-gray-300">Visibility</TableHead>
+                          <TableHead className="text-gray-300">Created</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {staticPages.map((page) => (
+                          <TableRow key={page.id} className="border-gray-600">
+                            <TableCell className="text-white">
+                              <div className="font-medium">{page.title}</div>
+                            </TableCell>
+                            <TableCell className="text-gray-300">/{page.slug}</TableCell>
+                            <TableCell>
+                              <Badge variant={page.is_visible ? 'default' : 'secondary'}>
+                                {page.is_visible ? 'Visible' : 'Hidden'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(page.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openPageDialog(page)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeletePage(page.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* User Management */}
           <TabsContent value="users">
             <Card className="border-gray-700 bg-gray-800">
               <CardHeader>
@@ -877,30 +1416,70 @@ const RootDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border border-gray-600 rounded-lg">
-                      <div>
-                        <h3 className="font-semibold text-white">
-                          {user.profiles?.full_name || user.profiles?.username || 'Unknown User'}
-                        </h3>
-                        <div className="text-sm text-gray-400">
-                          <p>Role: {user.profiles?.role || 'user'}</p>
-                          <p>Joined: {new Date(user.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={
-                          user.profiles?.role === 'root_admin' ? 'destructive' :
-                          user.profiles?.role === 'admin' ? 'default' :
-                          user.profiles?.role === 'moderator' ? 'secondary' : 'outline'
-                        }>
-                          {user.profiles?.role || 'user'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {users.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-300 mb-2">No users found</h3>
+                    <p className="text-gray-400">No users have registered yet.</p>
+                  </div>
+                ) : (
+                  <div className="border border-gray-600 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-600">
+                          <TableHead className="text-gray-300">User</TableHead>
+                          <TableHead className="text-gray-300">Username</TableHead>
+                          <TableHead className="text-gray-300">Role</TableHead>
+                          <TableHead className="text-gray-300">Joined</TableHead>
+                          <TableHead className="text-gray-300">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id} className="border-gray-600">
+                            <TableCell className="text-white">
+                              <div className="font-medium">
+                                {user.profiles?.full_name || 'Unknown User'}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-gray-300">
+                              @{user.profiles?.username || 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                user.profiles?.role === 'root_admin' ? 'destructive' :
+                                user.profiles?.role === 'admin' ? 'default' :
+                                user.profiles?.role === 'moderator' ? 'secondary' : 'outline'
+                              }>
+                                {user.profiles?.role || 'user'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-gray-300">
+                              {new Date(user.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {user.id !== userProfile.id && (
+                                <Select
+                                  value={user.profiles?.role || 'user'}
+                                  onValueChange={(value) => handleUserRoleUpdate(user.id, value)}
+                                >
+                                  <SelectTrigger className="w-32 bg-gray-700 border-gray-600">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="moderator">Moderator</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1106,6 +1685,258 @@ const RootDashboard = () => {
             </Button>
             <Button onClick={handleSaveDeal}>
               {editingDeal ? 'Update Deal' : 'Create Deal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Shop Form Dialog */}
+      <Dialog open={showShopDialog} onOpenChange={setShowShopDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingShop ? 'Edit Shop' : 'Create New Shop'}</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {editingShop ? 'Update shop information' : 'Add a new shop to the platform'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="shop_name">Shop Name *</Label>
+              <Input
+                id="shop_name"
+                value={shopForm.name}
+                onChange={(e) => setShopForm({...shopForm, name: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Shop name"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="shop_slug">Slug</Label>
+              <Input
+                id="shop_slug"
+                value={shopForm.slug}
+                onChange={(e) => setShopForm({...shopForm, slug: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="shop-slug (auto-generated if empty)"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="shop_description">Description</Label>
+              <Textarea
+                id="shop_description"
+                value={shopForm.description}
+                onChange={(e) => setShopForm({...shopForm, description: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Shop description"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="shop_logo">Logo URL</Label>
+              <Input
+                id="shop_logo"
+                value={shopForm.logo_url}
+                onChange={(e) => setShopForm({...shopForm, logo_url: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="https://example.com/logo.png"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="shop_website">Website URL</Label>
+              <Input
+                id="shop_website"
+                value={shopForm.website_url}
+                onChange={(e) => setShopForm({...shopForm, website_url: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="https://example.com"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShopDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveShop}>
+              {editingShop ? 'Update Shop' : 'Create Shop'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Blog Form Dialog */}
+      <Dialog open={showBlogDialog} onOpenChange={setShowBlogDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{editingBlog ? 'Edit Blog Post' : 'Create New Blog Post'}</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {editingBlog ? 'Update blog post information' : 'Add a new blog post to the platform'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div>
+              <Label htmlFor="blog_title">Title *</Label>
+              <Input
+                id="blog_title"
+                value={blogForm.title}
+                onChange={(e) => setBlogForm({...blogForm, title: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Blog post title"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="blog_slug">Slug</Label>
+              <Input
+                id="blog_slug"
+                value={blogForm.slug}
+                onChange={(e) => setBlogForm({...blogForm, slug: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="blog-post-slug (auto-generated if empty)"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="blog_summary">Summary</Label>
+              <Textarea
+                id="blog_summary"
+                value={blogForm.summary}
+                onChange={(e) => setBlogForm({...blogForm, summary: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Brief summary of the blog post"
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="blog_content">Content</Label>
+              <Textarea
+                id="blog_content"
+                value={blogForm.content}
+                onChange={(e) => setBlogForm({...blogForm, content: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Blog post content"
+                rows={6}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="blog_image">Featured Image URL</Label>
+              <Input
+                id="blog_image"
+                value={blogForm.featured_image}
+                onChange={(e) => setBlogForm({...blogForm, featured_image: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="blog_category">Category</Label>
+                <Input
+                  id="blog_category"
+                  value={blogForm.category}
+                  onChange={(e) => setBlogForm({...blogForm, category: e.target.value})}
+                  className="bg-gray-700 border-gray-600"
+                  placeholder="Category name"
+                />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={blogForm.status} onValueChange={(value) => setBlogForm({...blogForm, status: value})}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBlogDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveBlog}>
+              {editingBlog ? 'Update Post' : 'Create Post'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Page Form Dialog */}
+      <Dialog open={showPageDialog} onOpenChange={setShowPageDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{editingPage ? 'Edit Page' : 'Create New Page'}</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {editingPage ? 'Update page information' : 'Add a new static page to the platform'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div>
+              <Label htmlFor="page_title">Title *</Label>
+              <Input
+                id="page_title"
+                value={pageForm.title}
+                onChange={(e) => setPageForm({...pageForm, title: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Page title"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="page_slug">Slug</Label>
+              <Input
+                id="page_slug"
+                value={pageForm.slug}
+                onChange={(e) => setPageForm({...pageForm, slug: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="page-slug (auto-generated if empty)"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="page_content">Content</Label>
+              <Textarea
+                id="page_content"
+                value={pageForm.content}
+                onChange={(e) => setPageForm({...pageForm, content: e.target.value})}
+                className="bg-gray-700 border-gray-600"
+                placeholder="Page content"
+                rows={8}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="page_visible"
+                checked={pageForm.is_visible}
+                onChange={(e) => setPageForm({...pageForm, is_visible: e.target.checked})}
+                className="rounded"
+              />
+              <Label htmlFor="page_visible">Make page visible</Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPageDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePage}>
+              {editingPage ? 'Update Page' : 'Create Page'}
             </Button>
           </DialogFooter>
         </DialogContent>
