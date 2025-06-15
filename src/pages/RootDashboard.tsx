@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { Plus, Edit, Trash2, Store, BookOpen, FileText, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/admin/EmptyState';
@@ -54,63 +54,120 @@ interface User {
   role: 'user' | 'admin';
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const RootDashboard = () => {
   const queryClient = useQueryClient();
 
-  // State declarations
+  // Pagination states
+  const [shopsPage, setShopsPage] = useState(1);
+  const [blogsPage, setBlogsPage] = useState(1);
+  const [pagesPage, setPagesPage] = useState(1);
+  const [usersPage, setUsersPage] = useState(1);
+
+  // Dialog states
   const [isShopDialogOpen, setIsShopDialogOpen] = useState(false);
   const [isBlogDialogOpen, setIsBlogDialogOpen] = useState(false);
   const [isPageDialogOpen, setIsPageDialogOpen] = useState(false);
 
+  // Form states
   const [shopForm, setShopForm] = useState<Partial<Shop>>({});
   const [blogForm, setBlogForm] = useState<Partial<Blog>>({});
   const [pageForm, setPageForm] = useState<Partial<Page>>({});
   const [userForm, setUserForm] = useState<Partial<User>>({});
 
+  // Editing states
   const [editingShopId, setEditingShopId] = useState<string | null>(null);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-  // Shops queries and mutations
-  const { data: shops = [], isLoading: shopsLoading } = useQuery({
-    queryKey: ['admin-shops'],
+  // Shops queries with pagination
+  const { data: shopsData, isLoading: shopsLoading } = useQuery({
+    queryKey: ['admin-shops', shopsPage],
     queryFn: async () => {
-      const { data, error } = await supabase.from('shops').select('*').order('created_at', { ascending: false });
+      const from = (shopsPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
+      const { data, error, count } = await supabase
+        .from('shops')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
       if (error) throw error;
-      return data;
+      return { data: data || [], total: count || 0 };
     }
   });
 
-  // Blogs queries and mutations
-  const { data: blogs = [], isLoading: blogsLoading } = useQuery({
-    queryKey: ['admin-blogs'],
+  // Blogs queries with pagination
+  const { data: blogsData, isLoading: blogsLoading } = useQuery({
+    queryKey: ['admin-blogs', blogsPage],
     queryFn: async () => {
-      const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+      const from = (blogsPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
+      const { data, error, count } = await supabase
+        .from('blog_posts')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
       if (error) throw error;
-      return data;
+      return { data: data || [], total: count || 0 };
     }
   });
 
-  // Pages queries and mutations
-  const { data: pages = [], isLoading: pagesLoading } = useQuery({
-    queryKey: ['admin-pages'],
+  // Pages queries with pagination
+  const { data: pagesData, isLoading: pagesLoading } = useQuery({
+    queryKey: ['admin-pages', pagesPage],
     queryFn: async () => {
-      const { data, error } = await supabase.from('static_pages').select('*').order('created_at', { ascending: false });
+      const from = (pagesPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
+      const { data, error, count } = await supabase
+        .from('static_pages')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
       if (error) throw error;
-      return data;
+      return { data: data || [], total: count || 0 };
     }
   });
 
-  // Users queries and mutations
-  const { data: users = [], isLoading: usersLoading } = useQuery({
-    queryKey: ['admin-users'],
+  // Users queries with pagination
+  const { data: usersData, isLoading: usersLoading } = useQuery({
+    queryKey: ['admin-users', usersPage],
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      const from = (usersPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      
+      const { data, error, count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
       if (error) throw error;
-      return data;
+      return { data: data || [], total: count || 0 };
     }
   });
+
+  const shops = shopsData?.data || [];
+  const blogs = blogsData?.data || [];
+  const pages = pagesData?.data || [];
+  const users = usersData?.data || [];
+
+  const totalShops = shopsData?.total || 0;
+  const totalBlogs = blogsData?.total || 0;
+  const totalPages = pagesData?.total || 0;
+  const totalUsers = usersData?.total || 0;
+
+  const totalShopsPages = Math.ceil(totalShops / ITEMS_PER_PAGE);
+  const totalBlogsPages = Math.ceil(totalBlogs / ITEMS_PER_PAGE);
+  const totalPagesPages = Math.ceil(totalPages / ITEMS_PER_PAGE);
+  const totalUsersPages = Math.ceil(totalUsers / ITEMS_PER_PAGE);
 
   // Mutation functions
   const createShopMutation = useMutation({
@@ -354,8 +411,11 @@ const RootDashboard = () => {
     setIsShopDialogOpen(true);
   };
 
-  const handleEditBlog = (blog: Blog) => {
-    setBlogForm(blog);
+  const handleEditBlog = (blog: any) => {
+    setBlogForm({
+      ...blog,
+      status: blog.status as 'published' | 'draft'
+    });
     setEditingBlogId(blog.id);
     setIsBlogDialogOpen(true);
   };
@@ -366,9 +426,61 @@ const RootDashboard = () => {
     setIsPageDialogOpen(true);
   };
 
-  const handleEditUser = (user: User) => {
-    setUserForm(user);
+  const handleEditUser = (user: any) => {
+    setUserForm({
+      ...user,
+      role: user.role as 'user' | 'admin'
+    });
     setEditingUserId(user.id);
+  };
+
+  const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <Pagination className="mt-4">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+              className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+          
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+
+            return (
+              <PaginationItem key={pageNum}>
+                <PaginationLink
+                  onClick={() => onPageChange(pageNum)}
+                  isActive={currentPage === pageNum}
+                  className="cursor-pointer"
+                >
+                  {pageNum}
+                </PaginationLink>
+              </PaginationItem>
+            );
+          })}
+          
+          <PaginationItem>
+            <PaginationNext 
+              onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+              className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
   };
 
   const renderShopsContent = () => {
@@ -376,7 +488,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (shops.length === 0) {
+    if (shops.length === 0 && shopsPage === 1) {
       return (
         <EmptyState
           title="No shops found"
@@ -389,35 +501,41 @@ const RootDashboard = () => {
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Website</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {shops.map((shop) => (
-            <TableRow key={shop.id}>
-              <TableCell className="font-medium">{shop.name}</TableCell>
-              <TableCell>{shop.description}</TableCell>
-              <TableCell>{shop.website_url}</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => handleEditShop(shop)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleDeleteShop(shop.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
+      <>
+        <div className="mb-4 text-sm text-muted-foreground">
+          Showing {(shopsPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(shopsPage * ITEMS_PER_PAGE, totalShops)} of {totalShops} shops
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Website</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {shops.map((shop) => (
+              <TableRow key={shop.id}>
+                <TableCell className="font-medium">{shop.name}</TableCell>
+                <TableCell>{shop.description}</TableCell>
+                <TableCell>{shop.website_url}</TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => handleEditShop(shop)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleDeleteShop(shop.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {renderPagination(shopsPage, totalShopsPages, setShopsPage)}
+      </>
     );
   };
 
@@ -426,7 +544,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (blogs.length === 0) {
+    if (blogs.length === 0 && blogsPage === 1) {
       return (
         <EmptyState
           title="No blog posts found"
@@ -439,39 +557,45 @@ const RootDashboard = () => {
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {blogs.map((blog) => (
-            <TableRow key={blog.id}>
-              <TableCell className="font-medium">{blog.title}</TableCell>
-              <TableCell>
-                <Badge variant={blog.status === 'published' ? "default" : "secondary"}>
-                  {blog.status}
-                </Badge>
-              </TableCell>
-              <TableCell>{new Date(blog.created_at).toLocaleDateString()}</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => handleEditBlog(blog)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleDeleteBlog(blog.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
+      <>
+        <div className="mb-4 text-sm text-muted-foreground">
+          Showing {(blogsPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(blogsPage * ITEMS_PER_PAGE, totalBlogs)} of {totalBlogs} blogs
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {blogs.map((blog) => (
+              <TableRow key={blog.id}>
+                <TableCell className="font-medium">{blog.title}</TableCell>
+                <TableCell>
+                  <Badge variant={blog.status === 'published' ? "default" : "secondary"}>
+                    {blog.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{new Date(blog.created_at).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => handleEditBlog(blog)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleDeleteBlog(blog.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {renderPagination(blogsPage, totalBlogsPages, setBlogsPage)}
+      </>
     );
   };
 
@@ -480,7 +604,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (pages.length === 0) {
+    if (pages.length === 0 && pagesPage === 1) {
       return (
         <EmptyState
           title="No pages found"
@@ -493,39 +617,45 @@ const RootDashboard = () => {
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Slug</TableHead>
-            <TableHead>Visibility</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {pages.map((page) => (
-            <TableRow key={page.id}>
-              <TableCell className="font-medium">{page.title}</TableCell>
-              <TableCell>{page.slug}</TableCell>
-              <TableCell>
-                <Badge variant={page.is_visible ? "default" : "secondary"}>
-                  {page.is_visible ? 'Visible' : 'Hidden'}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline" onClick={() => handleEditPage(page)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleDeletePage(page.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
+      <>
+        <div className="mb-4 text-sm text-muted-foreground">
+          Showing {(pagesPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(pagesPage * ITEMS_PER_PAGE, totalPages)} of {totalPages} pages
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Slug</TableHead>
+              <TableHead>Visibility</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {pages.map((page) => (
+              <TableRow key={page.id}>
+                <TableCell className="font-medium">{page.title}</TableCell>
+                <TableCell>{page.slug}</TableCell>
+                <TableCell>
+                  <Badge variant={page.is_visible ? "default" : "secondary"}>
+                    {page.is_visible ? 'Visible' : 'Hidden'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" onClick={() => handleEditPage(page)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleDeletePage(page.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {renderPagination(pagesPage, totalPagesPages, setPagesPage)}
+      </>
     );
   };
 
@@ -534,7 +664,7 @@ const RootDashboard = () => {
       return <TableSkeleton rows={5} columns={4} />;
     }
 
-    if (users.length === 0) {
+    if (users.length === 0 && usersPage === 1) {
       return (
         <EmptyState
           title="No users found"
@@ -547,34 +677,40 @@ const RootDashboard = () => {
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Username</TableHead>
-            <TableHead>Full Name</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">{user.username}</TableCell>
-              <TableCell>{user.full_name}</TableCell>
-              <TableCell>
-                <Badge variant={user.role === 'admin' ? "destructive" : "default"}>
-                  {user.role}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </TableCell>
+      <>
+        <div className="mb-4 text-sm text-muted-foreground">
+          Showing {(usersPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(usersPage * ITEMS_PER_PAGE, totalUsers)} of {totalUsers} users
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Full Name</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.username}</TableCell>
+                <TableCell>{user.full_name}</TableCell>
+                <TableCell>
+                  <Badge variant={user.role === 'admin' ? "destructive" : "default"}>
+                    {user.role}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {renderPagination(usersPage, totalUsersPages, setUsersPage)}
+      </>
     );
   };
 
