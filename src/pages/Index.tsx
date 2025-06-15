@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
@@ -59,19 +58,29 @@ const Index = () => {
 
   useEffect(() => {
     fetchInitialData();
-    // Use the imported categories from data file
+    // Use the imported categories from data file with their icons
     setCategoriesData(categories.slice(0, 8));
   }, []);
 
   const fetchInitialData = async () => {
     try {
-      // Fetch categories
-      const { data: categoriesData } = await supabase
+      // Fetch categories from database but use local categories with icons as fallback
+      const { data: categoriesFromDB } = await supabase
         .from('categories')
         .select('*')
         .limit(8);
       
-      if (categoriesData) setCategoriesData(categoriesData);
+      // If we have categories from DB, merge them with local category data to get icons
+      if (categoriesFromDB && categoriesFromDB.length > 0) {
+        const mergedCategories = categoriesFromDB.map(dbCategory => {
+          const localCategory = categories.find(cat => cat.slug === dbCategory.slug);
+          return {
+            ...dbCategory,
+            icon: localCategory?.icon || null
+          };
+        });
+        setCategoriesData(mergedCategories);
+      }
 
       // Fetch shops
       const { data: shopsData } = await supabase
@@ -267,7 +276,13 @@ const Index = () => {
                       <Card className="hover:shadow-xl transition-all duration-300 group-hover:scale-105 group-hover:border-blue-300 border-2 border-transparent">
                         <CardContent className="p-6 text-center">
                           <div className="mb-4 group-hover:scale-110 transition-transform">
-                            {IconComponent && <IconComponent className="h-12 w-12 mx-auto text-blue-600" />}
+                            {IconComponent ? (
+                              <IconComponent className="h-12 w-12 mx-auto text-blue-600" />
+                            ) : (
+                              <div className="h-12 w-12 mx-auto bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span className="text-blue-600 font-bold text-xl">{category.name.charAt(0)}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
                             {category.name}
