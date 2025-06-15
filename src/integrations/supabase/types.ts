@@ -599,6 +599,20 @@ export type Database = {
         Args: { title: string; table_name: string }
         Returns: string
       }
+      get_shops_with_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+          slug: string
+          description: string
+          logo_url: string
+          website_url: string
+          category: string
+          deal_count: number
+          coupon_count: number
+        }[]
+      }
       has_role: {
         Args: { _user_id: string; _role: string }
         Returns: boolean
