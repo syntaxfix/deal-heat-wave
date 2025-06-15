@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Terminal } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useEffect } from 'react';
 
 const settingsSchema = z.object({
   homepage_meta_title: z.string().optional(),
@@ -62,13 +62,24 @@ export const SettingsAdmin = () => {
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    values: {
-        homepage_meta_title: settings?.homepage_meta_title ?? '',
-        homepage_meta_description: settings?.homepage_meta_description ?? '',
-        homepage_meta_keywords: settings?.homepage_meta_keywords ?? '',
-        google_tag_id: settings?.google_tag_id ?? '',
+    defaultValues: {
+        homepage_meta_title: '',
+        homepage_meta_description: '',
+        homepage_meta_keywords: '',
+        google_tag_id: '',
     },
   });
+
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        homepage_meta_title: settings.homepage_meta_title ?? '',
+        homepage_meta_description: settings.homepage_meta_description ?? '',
+        homepage_meta_keywords: settings.homepage_meta_keywords ?? '',
+        google_tag_id: settings.google_tag_id ?? '',
+      });
+    }
+  }, [settings, form]);
 
   const onSubmit: SubmitHandler<SettingsFormValues> = (data) => {
     mutation.mutate(data);
