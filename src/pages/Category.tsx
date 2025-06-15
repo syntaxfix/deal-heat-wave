@@ -23,6 +23,7 @@ const Category = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
   const [selectedShop, setSelectedShop] = useState('');
+  const [viewType, setViewType] = useState<ViewType>('grid');
   const [categories, setCategories] = useState([]);
   const [shops, setShops] = useState([]);
 
@@ -150,9 +151,12 @@ const Category = () => {
             selectedCategory={slug || ''}
             selectedShop={selectedShop}
             sortBy={sortBy}
+            viewType={viewType}
             onCategoryChange={() => {}} // Disabled in category page
             onShopChange={setSelectedShop}
             onSortChange={setSortBy}
+            onViewChange={setViewType}
+            showViewSwitcher={true}
           />
 
           {/* Deal Listings */}
@@ -160,6 +164,7 @@ const Category = () => {
             categorySlug={slug}
             shopSlug={selectedShop}
             sortBy={sortBy}
+            viewType={viewType}
           />
         </div>
       </div>

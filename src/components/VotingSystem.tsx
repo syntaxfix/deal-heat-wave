@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ChevronUp, ChevronDown, Flame } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface VotingSystemProps {
@@ -11,23 +11,30 @@ interface VotingSystemProps {
   initialUpvotes: number;
   initialDownvotes: number;
   initialHeatScore: number;
+  compact?: boolean;
 }
 
-const VotingSystem = ({ dealId, initialUpvotes, initialDownvotes, initialHeatScore }: VotingSystemProps) => {
-  const { user } = useAuth();
+const VotingSystem = ({ 
+  dealId, 
+  initialUpvotes, 
+  initialDownvotes, 
+  initialHeatScore,
+  compact = false
+}: VotingSystemProps) => {
   const [upvotes, setUpvotes] = useState(initialUpvotes);
   const [downvotes, setDownvotes] = useState(initialDownvotes);
   const [heatScore, setHeatScore] = useState(initialHeatScore);
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      fetchUserVote();
+      checkUserVote();
     }
   }, [user, dealId]);
 
-  const fetchUserVote = async () => {
+  const checkUserVote = async () => {
     if (!user) return;
 
     const { data } = await supabase
@@ -44,23 +51,22 @@ const VotingSystem = ({ dealId, initialUpvotes, initialDownvotes, initialHeatSco
 
   const handleVote = async (voteType: 'up' | 'down') => {
     if (!user) {
-      toast.error('Please sign in to vote');
+      toast.error('Please log in to vote');
       return;
     }
 
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
-      // Remove existing vote if same type
       if (userVote === voteType) {
-        const { error } = await supabase
+        // Remove vote
+        await supabase
           .from('deal_votes')
           .delete()
           .eq('deal_id', dealId)
           .eq('user_id', user.id);
-
-        if (error) throw error;
-
+        
         setUserVote(null);
         if (voteType === 'up') {
           setUpvotes(prev => prev - 1);
@@ -70,8 +76,8 @@ const VotingSystem = ({ dealId, initialUpvotes, initialDownvotes, initialHeatSco
           setHeatScore(prev => prev + 1);
         }
       } else {
-        // Insert or update vote
-        const { error } = await supabase
+        // Add or change vote
+        await supabase
           .from('deal_votes')
           .upsert({
             deal_id: dealId,
@@ -79,19 +85,19 @@ const VotingSystem = ({ dealId, initialUpvotes, initialDownvotes, initialHeatSco
             vote_type: voteType
           });
 
-        if (error) throw error;
+        const oldVote = userVote;
+        setUserVote(voteType);
 
-        // Update local state
-        if (userVote) {
-          // Switching vote type
-          if (userVote === 'up' && voteType === 'down') {
+        if (oldVote) {
+          // Changing vote
+          if (voteType === 'up') {
+            setUpvotes(prev => prev + 1);
+            setDownvotes(prev => prev - 1);
+            setHeatScore(prev => prev + 3); // +2 for up, +1 for removing down
+          } else {
             setUpvotes(prev => prev - 1);
             setDownvotes(prev => prev + 1);
-            setHeatScore(prev => prev - 3); // -2 for removing upvote, -1 for adding downvote
-          } else if (userVote === 'down' && voteType === 'up') {
-            setDownvotes(prev => prev - 1);
-            setUpvotes(prev => prev + 1);
-            setHeatScore(prev => prev + 3); // +1 for removing downvote, +2 for adding upvote
+            setHeatScore(prev => prev - 3); // -2 for removing up, -1 for down
           }
         } else {
           // New vote
@@ -103,62 +109,85 @@ const VotingSystem = ({ dealId, initialUpvotes, initialDownvotes, initialHeatSco
             setHeatScore(prev => prev - 1);
           }
         }
-
-        setUserVote(voteType);
       }
     } catch (error) {
       console.error('Error voting:', error);
       toast.error('Failed to vote');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const getHeatColor = () => {
     if (heatScore >= 50) return 'text-red-600';
-    if (heatScore >= 20) return 'text-orange-500';
-    if (heatScore >= 10) return 'text-yellow-500';
-    return 'text-gray-500';
+    if (heatScore >= 20) return 'text-orange-600';
+    if (heatScore >= 10) return 'text-yellow-600';
+    return 'text-blue-600';
   };
+
+  if (compact) {
+    return (
+      <div className="flex items-center space-x-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleVote('up')}
+          disabled={isLoading}
+          className={`h-6 w-6 p-0 ${userVote === 'up' ? 'bg-green-100 text-green-600' : 'hover:bg-green-50'}`}
+        >
+          <ChevronUp className="h-3 w-3" />
+        </Button>
+        
+        <div className="flex items-center space-x-1">
+          <Flame className={`h-3 w-3 ${getHeatColor()}`} />
+          <span className="text-xs font-medium text-gray-700">{heatScore}</span>
+        </div>
+        
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleVote('down')}
+          disabled={isLoading}
+          className={`h-6 w-6 p-0 ${userVote === 'down' ? 'bg-red-100 text-red-600' : 'hover:bg-red-50'}`}
+        >
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center space-x-2">
-      <div className="flex items-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleVote('up')}
-          disabled={isLoading}
-          className={`p-1 h-8 ${userVote === 'up' ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:text-green-600'}`}
-        >
-          <ChevronUp className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-medium min-w-[2rem] text-center">
-          {upvotes}
-        </span>
-      </div>
-
-      <div className="flex items-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleVote('down')}
-          disabled={isLoading}
-          className={`p-1 h-8 ${userVote === 'down' ? 'text-red-600 bg-red-50' : 'text-gray-500 hover:text-red-600'}`}
-        >
-          <ChevronDown className="h-4 w-4" />
-        </Button>
-        <span className="text-sm font-medium min-w-[2rem] text-center">
-          {downvotes}
-        </span>
-      </div>
-
-      <div className="flex items-center space-x-1 ml-2">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => handleVote('up')}
+        disabled={isLoading}
+        className={`flex items-center space-x-1 ${
+          userVote === 'up' ? 'bg-green-100 text-green-600' : 'hover:bg-green-50'
+        }`}
+      >
+        <ChevronUp className="h-4 w-4" />
+        <span className="text-sm">{upvotes}</span>
+      </Button>
+      
+      <div className="flex items-center space-x-1">
         <Flame className={`h-4 w-4 ${getHeatColor()}`} />
-        <span className={`text-sm font-bold ${getHeatColor()}`}>
-          {heatScore}°
-        </span>
+        <span className="text-sm font-medium text-gray-700">{heatScore}</span>
       </div>
+      
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => handleVote('down')}
+        disabled={isLoading}
+        className={`flex items-center space-x-1 ${
+          userVote === 'down' ? 'bg-red-100 text-red-600' : 'hover:bg-red-50'
+        }`}
+      >
+        <ChevronDown className="h-4 w-4" />
+        <span className="text-sm">{downvotes}</span>
+      </Button>
     </div>
   );
 };

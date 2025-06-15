@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import DealListings from '@/components/DealListings';
 import FilterBar from '@/components/FilterBar';
+import { ViewType } from '@/components/ViewSwitcher';
 import { Package } from 'lucide-react';
 import { categories } from '@/data/categories';
 
@@ -18,6 +18,7 @@ const AllDeals = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedShop, setSelectedShop] = useState('');
   const [sortBy, setSortBy] = useState('hot');
+  const [viewType, setViewType] = useState<ViewType>('grid');
 
   useEffect(() => {
     fetchShops();
@@ -51,16 +52,19 @@ const AllDeals = () => {
             </p>
           </div>
 
-          {/* Filter Bar */}
+          {/* Filter Bar with View Switcher */}
           <FilterBar
             categories={categories}
             shops={shops}
             selectedCategory={selectedCategory}
             selectedShop={selectedShop}
             sortBy={sortBy}
+            viewType={viewType}
             onCategoryChange={setSelectedCategory}
             onShopChange={setSelectedShop}
             onSortChange={setSortBy}
+            onViewChange={setViewType}
+            showViewSwitcher={true}
           />
 
           {/* Deal Listings */}
@@ -68,6 +72,7 @@ const AllDeals = () => {
             categorySlug={selectedCategory}
             shopSlug={selectedShop}
             sortBy={sortBy}
+            viewType={viewType}
           />
         </div>
       </div>
