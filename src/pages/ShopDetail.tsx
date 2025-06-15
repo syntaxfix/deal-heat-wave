@@ -298,7 +298,7 @@ const ShopDetail = () => {
                         <div className="flex items-center justify-between">
                           <CardTitle className="text-lg">{coupon.title}</CardTitle>
                           {coupon.verified && (
-                            <Badge variant="limited-time">Verified</Badge>
+                            <Badge variant="secondary">Verified</Badge>
                           )}
                         </div>
                         {coupon.description && (
