@@ -1,81 +1,38 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import Header from '@/components/Header';
-import DealListings from '@/components/DealListings';
-import FilterBar from '@/components/FilterBar';
-import { ViewType } from '@/components/ViewSwitcher';
-import { Package } from 'lucide-react';
-import { categories } from '@/data/categories';
 
-interface Shop {
-  id: string;
-  name: string;
-  slug: string;
-}
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import { DealListings } from '@/components/DealListings';
+import { FilterBar } from '@/components/FilterBar';
+import { useState } from 'react';
 
 const AllDeals = () => {
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedShop, setSelectedShop] = useState('');
   const [sortBy, setSortBy] = useState('hot');
-  const [viewType, setViewType] = useState<ViewType>('grid');
-
-  useEffect(() => {
-    fetchShops();
-  }, []);
-
-  const fetchShops = async () => {
-    const { data: shopsData } = await supabase
-      .from('shops')
-      .select('*')
-      .order('name');
-    
-    if (shopsData) setShops(shopsData);
-  };
+  const [categorySlug, setCategorySlug] = useState('');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col">
       <Header />
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-8">
           <div className="mb-8">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Package className="h-6 w-6 text-primary" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900">All Deals</h1>
-            </div>
-            <p className="text-gray-600">
-              Discover amazing deals from all categories and stores
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">All Deals</h1>
+            <p className="text-gray-600">Discover the latest deals and save big on your favorite products</p>
           </div>
-
-          {/* Filter Bar with View Switcher */}
-          <FilterBar
-            categories={categories}
-            shops={shops}
-            selectedCategory={selectedCategory}
-            selectedShop={selectedShop}
+          
+          <FilterBar 
             sortBy={sortBy}
-            viewType={viewType}
-            onCategoryChange={setSelectedCategory}
-            onShopChange={setSelectedShop}
             onSortChange={setSortBy}
-            onViewChange={setViewType}
-            showViewSwitcher={true}
+            categorySlug={categorySlug}
+            onCategoryChange={setCategorySlug}
           />
-
-          {/* Deal Listings */}
-          <DealListings
-            categorySlug={selectedCategory}
-            shopSlug={selectedShop}
+          
+          <DealListings 
+            categorySlug={categorySlug}
             sortBy={sortBy}
-            viewType={viewType}
           />
         </div>
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 };
