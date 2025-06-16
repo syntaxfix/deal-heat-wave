@@ -1,8 +1,8 @@
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { DealListings } from '@/components/DealListings';
-import { FilterBar } from '@/components/FilterBar';
+import DealListings from '@/components/DealListings';
+import FilterBar from '@/components/FilterBar';
 import { useState } from 'react';
 
 const AllDeals = () => {

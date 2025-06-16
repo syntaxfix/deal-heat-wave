@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DealCard } from '@/components/DealCard';
+import DealCard from '@/components/DealCard';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,12 +11,10 @@ const fetchFeaturedDeals = async () => {
     .from('deals')
     .select(`
       *,
-      shop:shops(name, slug, logo_url),
-      categories:deal_categories(category:categories(name, slug))
+      shops(name, slug, logo_url),
+      categories(name, slug)
     `)
     .eq('status', 'approved')
-    .eq('is_featured', true)
-    .order('created_at', { ascending: false })
     .limit(6);
 
   if (error) throw error;

@@ -13,14 +13,14 @@ const fetchDealOfTheDay = async () => {
     .select(`
       deal:deals(
         *,
-        shop:shops(name, slug, logo_url),
-        categories:deal_categories(category:categories(name, slug))
+        shops(name, slug, logo_url),
+        categories(name, slug)
       )
     `)
-    .eq('is_active', true)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) throw error;
   return data?.deal || null;
 };
 
@@ -85,9 +85,9 @@ export const DealOfTheDay = () => {
                       ${deal.original_price}
                     </span>
                   )}
-                  {deal.deal_price && (
+                  {deal.discounted_price && (
                     <span className="text-3xl font-bold text-green-600">
-                      ${deal.deal_price}
+                      ${deal.discounted_price}
                     </span>
                   )}
                   {deal.discount_percentage && (
@@ -104,16 +104,16 @@ export const DealOfTheDay = () => {
                     <span className="text-gray-500">votes</span>
                   </div>
                   
-                  {deal.shop && (
+                  {deal.shops && (
                     <div className="flex items-center space-x-2">
-                      {deal.shop.logo_url && (
+                      {deal.shops.logo_url && (
                         <img 
-                          src={deal.shop.logo_url} 
-                          alt={deal.shop.name}
+                          src={deal.shops.logo_url} 
+                          alt={deal.shops.name}
                           className="w-6 h-6 rounded"
                         />
                       )}
-                      <span className="text-gray-600">{deal.shop.name}</span>
+                      <span className="text-gray-600">{deal.shops.name}</span>
                     </div>
                   )}
                 </div>
@@ -126,9 +126,9 @@ export const DealOfTheDay = () => {
                     </Link>
                   </Button>
                   
-                  {deal.deal_url && (
+                  {deal.affiliate_link && (
                     <Button asChild variant="outline" size="lg" className="flex-1">
-                      <a href={deal.deal_url} target="_blank" rel="noopener noreferrer">
+                      <a href={deal.affiliate_link} target="_blank" rel="noopener noreferrer">
                         Get Deal
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
