@@ -1,4 +1,3 @@
-
 import {
   Tabs,
   TabsContent,
@@ -25,7 +24,7 @@ const RootDashboard = () => {
       <div className="container mx-auto py-10">
         <h1 className="text-3xl font-bold mb-6">Root Dashboard</h1>
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-11">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="deals">Deals</TabsTrigger>
             <TabsTrigger value="featured">Featured</TabsTrigger>
