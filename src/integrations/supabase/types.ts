@@ -391,41 +391,6 @@ export type Database = {
           },
         ]
       }
-      featured_deals: {
-        Row: {
-          created_at: string
-          deal_id: string
-          display_order: number | null
-          featured_date: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          deal_id: string
-          display_order?: number | null
-          featured_date?: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          deal_id?: string
-          display_order?: number | null
-          featured_date?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "featured_deals_deal_id_fkey"
-            columns: ["deal_id"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -633,24 +598,6 @@ export type Database = {
       generate_unique_slug: {
         Args: { title: string; table_name: string }
         Returns: string
-      }
-      get_dashboard_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_shops_with_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          id: string
-          name: string
-          slug: string
-          description: string
-          logo_url: string
-          website_url: string
-          category: string
-          deal_count: number
-          coupon_count: number
-        }[]
       }
       has_role: {
         Args: { _user_id: string; _role: string }

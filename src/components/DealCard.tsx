@@ -6,8 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Clock, ExternalLink, Store } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
-import { useCurrencySetting } from '@/hooks/useCurrencySetting';
-import { Skeleton } from './ui/skeleton';
 
 interface Deal {
   id: string;
@@ -33,7 +31,6 @@ interface DealCardProps {
 }
 
 const DealCard = ({ deal }: DealCardProps) => {
-  const { data: currency, isLoading: isCurrencyLoading } = useCurrencySetting();
   const {
     id,
     title,
@@ -131,18 +128,12 @@ const DealCard = ({ deal }: DealCardProps) => {
           {/* Price Section */}
           {original_price > 0 && discounted_price > 0 && (
             <div className="flex items-center space-x-2">
-              {isCurrencyLoading ? (
-                <Skeleton className="h-7 w-24" />
-              ) : (
-                <>
-                  <span className="text-lg font-bold text-green-600">
-                    {currency?.symbol}{discounted_price.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-gray-500 line-through">
-                    {currency?.symbol}{original_price.toFixed(2)}
-                  </span>
-                </>
-              )}
+              <span className="text-lg font-bold text-green-600">
+                ${discounted_price.toFixed(2)}
+              </span>
+              <span className="text-sm text-gray-500 line-through">
+                ${original_price.toFixed(2)}
+              </span>
             </div>
           )}
 

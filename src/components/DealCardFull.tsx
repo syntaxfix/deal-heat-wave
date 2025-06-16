@@ -7,8 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Clock, ExternalLink, Store, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
-import { useCurrencySetting } from '@/hooks/useCurrencySetting';
-import { Skeleton } from './ui/skeleton';
 
 interface Deal {
   id: string;
@@ -34,7 +32,6 @@ interface DealCardFullProps {
 }
 
 const DealCardFull = ({ deal }: DealCardFullProps) => {
-  const { data: currency, isLoading: isCurrencyLoading } = useCurrencySetting();
   const {
     id,
     title,
@@ -150,26 +147,17 @@ const DealCardFull = ({ deal }: DealCardFullProps) => {
               {/* Price Section */}
               {original_price > 0 && discounted_price > 0 && (
                 <div className="flex items-center space-x-4">
-                  {isCurrencyLoading ? (
-                    <div className="flex items-center space-x-4">
-                      <Skeleton className="h-9 w-24" />
-                      <Skeleton className="h-6 w-16" />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center space-x-3">
-                        <span className="text-3xl font-bold text-green-600">
-                          {currency?.symbol}{discounted_price.toFixed(2)}
-                        </span>
-                        <span className="text-lg text-gray-500 line-through">
-                          {currency?.symbol}{original_price.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 bg-green-100 px-2 py-1 rounded">
-                        Save {currency?.symbol}{(original_price - discounted_price).toFixed(2)}
-                      </div>
-                    </>
-                  )}
+                  <div className="flex items-center space-x-3">
+                    <span className="text-3xl font-bold text-green-600">
+                      ${discounted_price.toFixed(2)}
+                    </span>
+                    <span className="text-lg text-gray-500 line-through">
+                      ${original_price.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 bg-green-100 px-2 py-1 rounded">
+                    Save ${(original_price - discounted_price).toFixed(2)}
+                  </div>
                 </div>
               )}
 

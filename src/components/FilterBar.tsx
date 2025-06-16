@@ -1,4 +1,3 @@
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,28 +44,24 @@ const FilterBar = ({
   showViewSwitcher = false
 }: FilterBarProps) => {
   const clearFilters = () => {
-    onCategoryChange('');
-    onShopChange('');
+    onCategoryChange('all');
+    onShopChange('all');
     onSortChange('hot');
   };
 
   const handleCategoryChange = (value: string) => {
-    // Convert "all-categories" back to empty string for the parent component
-    onCategoryChange(value === 'all-categories' ? '' : value);
+    // Convert "all" back to empty string for the parent component
+    onCategoryChange(value === 'all' ? '' : value);
   };
 
   const handleShopChange = (value: string) => {
-    // Convert "all-shops" back to empty string for the parent component
-    onShopChange(value === 'all-shops' ? '' : value);
+    // Convert "all" back to empty string for the parent component
+    onShopChange(value === 'all' ? '' : value);
   };
 
-  // Convert empty strings to appropriate values for the Select component
-  const categoryValue = selectedCategory === '' ? 'all-categories' : selectedCategory;
-  const shopValue = selectedShop === '' ? 'all-shops' : selectedShop;
-
-  // Filter out categories and shops with empty slugs
-  const validCategories = categories.filter(category => category.slug && category.slug.trim() !== '');
-  const validShops = shops.filter(shop => shop.slug && shop.slug.trim() !== '');
+  // Convert empty strings to "all" for the Select component
+  const categoryValue = selectedCategory === '' ? 'all' : selectedCategory;
+  const shopValue = selectedShop === '' ? 'all' : selectedShop;
 
   return (
     <Card className="mb-6">
@@ -85,8 +80,8 @@ const FilterBar = ({
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-categories">All Categories</SelectItem>
-                  {validCategories.map((category) => (
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((category) => (
                     <SelectItem key={category.id} value={category.slug}>
                       {category.name}
                     </SelectItem>
@@ -100,8 +95,8 @@ const FilterBar = ({
                   <SelectValue placeholder="All Shops" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-shops">All Shops</SelectItem>
-                  {validShops.map((shop) => (
+                  <SelectItem value="all">All Shops</SelectItem>
+                  {shops.map((shop) => (
                     <SelectItem key={shop.id} value={shop.slug}>
                       {shop.name}
                     </SelectItem>

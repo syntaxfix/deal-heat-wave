@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,17 +31,42 @@ const Shops = () => {
   }, []);
 
   const fetchShops = async () => {
-    setLoading(true);
-    // Use the new RPC function to fetch shops with deal and coupon counts efficiently
-    const { data, error } = await supabase.rpc('get_shops_with_counts');
+    // Fetch shops with deal and coupon counts
+    const { data: shopsData, error: shopsError } = await supabase
+      .from('shops')
+      .select('*')
+      .order('name');
 
-    if (error) {
-      console.error('Error fetching shops:', error);
-      setShops([]);
-    } else {
-      // The RPC function returns an array of shops with counts
-      setShops(data as Shop[]);
+    if (shopsError) {
+      console.error('Error fetching shops:', shopsError);
+      setLoading(false);
+      return;
     }
+
+    // Get deal counts for each shop
+    const shopsWithCounts = await Promise.all(
+      (shopsData || []).map(async (shop) => {
+        const [{ count: dealCount }, { count: couponCount }] = await Promise.all([
+          supabase
+            .from('deals')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', shop.id)
+            .eq('status', 'approved'),
+          supabase
+            .from('coupons')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', shop.id)
+        ]);
+
+        return {
+          ...shop,
+          deal_count: dealCount || 0,
+          coupon_count: couponCount || 0
+        };
+      })
+    );
+
+    setShops(shopsWithCounts);
     setLoading(false);
   };
 

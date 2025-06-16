@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,8 +6,6 @@ import { Clock, ExternalLink, Store } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
 import { Button } from '@/components/ui/button';
-import { useCurrencySetting } from '@/hooks/useCurrencySetting';
-import { Skeleton } from './ui/skeleton';
 
 interface Deal {
   id: string;
@@ -34,7 +31,6 @@ interface DealCardCompactProps {
 }
 
 const DealCardCompact = ({ deal }: DealCardCompactProps) => {
-  const { data: currency, isLoading: isCurrencyLoading } = useCurrencySetting();
   const {
     id,
     title,
@@ -116,18 +112,12 @@ const DealCardCompact = ({ deal }: DealCardCompactProps) => {
                 {/* Price */}
                 {original_price > 0 && discounted_price > 0 && (
                   <div className="flex items-center space-x-2">
-                    {isCurrencyLoading ? (
-                      <Skeleton className="h-6 w-20" />
-                    ) : (
-                      <>
-                        <span className="text-lg font-bold text-green-600">
-                          {currency?.symbol}{discounted_price.toFixed(2)}
-                        </span>
-                        <span className="text-xs text-gray-500 line-through">
-                          {currency?.symbol}{original_price.toFixed(2)}
-                        </span>
-                      </>
-                    )}
+                    <span className="text-lg font-bold text-green-600">
+                      ${discounted_price.toFixed(2)}
+                    </span>
+                    <span className="text-xs text-gray-500 line-through">
+                      ${original_price.toFixed(2)}
+                    </span>
                   </div>
                 )}
               </div>

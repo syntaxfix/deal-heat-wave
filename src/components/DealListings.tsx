@@ -78,6 +78,8 @@ const DealListings = ({
 
     // Apply filters
     if (categorySlug && categorySlug !== 'all' && categorySlug !== '') {
+      console.log('Filtering by category slug:', categorySlug);
+      // Get category ID first
       const { data: categoryData } = await supabase
         .from('categories')
         .select('id')
@@ -85,11 +87,16 @@ const DealListings = ({
         .single();
       
       if (categoryData) {
+        console.log('Found category ID:', categoryData.id);
         query = query.eq('category_id', categoryData.id);
+      } else {
+        console.log('Category not found for slug:', categorySlug);
       }
     }
     
     if (shopSlug && shopSlug !== 'all' && shopSlug !== '') {
+      console.log('Filtering by shop slug:', shopSlug);
+      // Get shop ID first
       const { data: shopData } = await supabase
         .from('shops')
         .select('id')
@@ -97,7 +104,10 @@ const DealListings = ({
         .single();
       
       if (shopData) {
+        console.log('Found shop ID:', shopData.id);
         query = query.eq('shop_id', shopData.id);
+      } else {
+        console.log('Shop not found for slug:', shopSlug);
       }
     }
     
@@ -134,6 +144,7 @@ const DealListings = ({
     if (error) {
       console.error('Error fetching deals:', error);
     } else {
+      console.log('Fetched deals:', data?.length || 0);
       const mappedDeals = (data || []).map(deal => ({
         ...deal,
         summary: deal.description || ''

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,21 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2, Terminal } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useEffect } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { currencies } from '@/data/currencies';
 
 const settingsSchema = z.object({
   homepage_meta_title: z.string().optional(),
   homepage_meta_description: z.string().optional(),
   homepage_meta_keywords: z.string().optional(),
   google_tag_id: z.string().optional(),
-  site_currency: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -53,8 +43,6 @@ const upsertSettings = async (settings: SettingsFormValues) => {
 
     const { error } = await supabase.from('system_settings').upsert(settingsToUpsert, { onConflict: 'key' });
     if (error) throw error;
-    
-    return settings;
 };
 
 export const SettingsAdmin = () => {
@@ -63,14 +51,9 @@ export const SettingsAdmin = () => {
 
   const mutation = useMutation({
     mutationFn: upsertSettings,
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success('Settings updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['system_settings'] });
-      
-      // If currency was changed, invalidate currency queries globally to update sitewide
-      if (data?.site_currency) {
-        queryClient.invalidateQueries({ queryKey: ['system_settings', 'currency'] });
-      }
     },
     onError: (error: any) => {
       toast.error(`Error updating settings: ${error.message}`);
@@ -84,7 +67,6 @@ export const SettingsAdmin = () => {
         homepage_meta_description: '',
         homepage_meta_keywords: '',
         google_tag_id: '',
-        site_currency: 'USD',
     },
   });
 
@@ -95,7 +77,6 @@ export const SettingsAdmin = () => {
         homepage_meta_description: settings.homepage_meta_description ?? '',
         homepage_meta_keywords: settings.homepage_meta_keywords ?? '',
         google_tag_id: settings.google_tag_id ?? '',
-        site_currency: settings.site_currency ?? 'USD',
       });
     }
   }, [settings, form]);
@@ -111,7 +92,7 @@ export const SettingsAdmin = () => {
         <Card>
             <CardHeader>
                 <CardTitle>Site Settings</CardTitle>
-                <CardDescription>Manage general site settings for SEO and analytics. Currency changes will apply sitewide.</CardDescription>
+                <CardDescription>Manage general site settings for SEO and analytics.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
@@ -147,30 +128,6 @@ export const SettingsAdmin = () => {
                                     <FormControl><Input placeholder="e.g. deals, discounts, coupons" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="site_currency"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Site Currency (Sitewide Setting)</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select a currency" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {currencies.map((currency) => (
-                                      <SelectItem key={currency.code} value={currency.code}>
-                                        {`${currency.symbol} ${currency.code} (${currency.country})`}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
                             )}
                         />
                         <FormField
