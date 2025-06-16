@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -8,9 +9,16 @@ import FilterBar from '@/components/FilterBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Users, Package, Clock, Star, ArrowRight, Zap, Gift, Target, Trophy } from 'lucide-react';
+import { TrendingUp, Users, Package, Clock, Star, ArrowRight, Zap, Gift, Target, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { categories } from '@/data/categories';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 interface Category {
   id: string;
@@ -36,11 +44,26 @@ interface BlogPost {
   created_at: string;
 }
 
+interface FeaturedDeal {
+  id: string;
+  deal_id: string;
+  display_order: number;
+  deals: {
+    id: string;
+    title: string;
+    image_url?: string;
+    discounted_price?: number;
+    heat_score?: number;
+    affiliate_link?: string;
+    slug?: string;
+    discount_percentage?: number;
+  };
+}
+
 interface Stats {
   totalDeals: number;
   todaysDeals: number;
   activeUsers: number;
-  hotDeal?: any;
 }
 
 const fetchSettings = async () => {
@@ -56,6 +79,22 @@ const fetchSettings = async () => {
   }, {} as { [key: string]: string | null });
 
   return settings;
+};
+
+const fetchFeaturedDeals = async () => {
+  const { data, error } = await supabase
+    .from('featured_deals')
+    .select(`
+      *,
+      deals(id, title, image_url, discounted_price, heat_score, affiliate_link, slug, discount_percentage)
+    `)
+    .order('display_order', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching featured deals:', error);
+    return [];
+  }
+  return data as FeaturedDeal[];
 };
 
 const Index = () => {
@@ -75,6 +114,11 @@ const Index = () => {
   const { data: settings } = useQuery({
     queryKey: ['system_settings'],
     queryFn: fetchSettings,
+  });
+
+  const { data: featuredDeals } = useQuery({
+    queryKey: ['featured_deals'],
+    queryFn: fetchFeaturedDeals,
   });
 
   useEffect(() => {
@@ -159,19 +203,16 @@ const Index = () => {
       
       const [
         { count: totalDeals },
-        { count: todaysDeals },
-        { data: hotDeal }
+        { count: todaysDeals }
       ] = await Promise.all([
         supabase.from('deals').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-        supabase.from('deals').select('*', { count: 'exact', head: true }).eq('status', 'approved').gte('created_at', today),
-        supabase.from('deals').select('*').eq('status', 'approved').order('heat_score', { ascending: false }).limit(1).single()
+        supabase.from('deals').select('*', { count: 'exact', head: true }).eq('status', 'approved').gte('created_at', today)
       ]);
 
       setStats({
         totalDeals: totalDeals || 0,
         todaysDeals: todaysDeals || 0,
         activeUsers: Math.floor(Math.random() * 100) + 50, // Simulated for now
-        hotDeal: hotDeal
       });
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -282,7 +323,7 @@ const Index = () => {
                   <TrendingUp className="h-6 w-6" />
                 </div>
                 <div className="text-3xl font-bold mb-1">
-                  {stats.hotDeal?.heat_score || 0}°
+                  {featuredDeals?.[0]?.deals?.heat_score || 0}°
                 </div>
                 <div className="text-sm opacity-80">Hottest Deal</div>
               </CardContent>
@@ -313,7 +354,7 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Enhanced Categories Section with Better Layout */}
+            {/* Enhanced Categories Section */}
             <section className="mb-12">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold mb-4 text-gray-900">
@@ -443,8 +484,8 @@ const Index = () => {
           {/* Enhanced Sidebar */}
           <div className="lg:w-1/4">
             <div className="sticky top-4 space-y-6">
-              {/* Enhanced Hot Deal Card */}
-              {stats.hotDeal && (
+              {/* Enhanced Featured Deals Carousel */}
+              {featuredDeals && featuredDeals.length > 0 && (
                 <Card className="border-2 border-red-200 shadow-lg">
                   <CardHeader className="limited-time-gradient text-white rounded-t-lg">
                     <CardTitle className="flex items-center text-lg">
@@ -453,42 +494,93 @@ const Index = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <Link to={`/deal/${stats.hotDeal.slug}`} className="block group">
-                      <div className="aspect-video bg-gray-100 overflow-hidden">
-                        {stats.hotDeal.image_url && (
-                          <img
-                            src={stats.hotDeal.image_url}
-                            alt={stats.hotDeal.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-semibold text-sm mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
-                          {stats.hotDeal.title}
-                        </h3>
-                        <div className="flex items-center justify-between mb-3">
-                          <Badge className="bg-red-500 hover:bg-red-600 text-white">
-                            {stats.hotDeal.heat_score}° Hot
-                          </Badge>
-                          {stats.hotDeal.discount_percentage && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                              -{stats.hotDeal.discount_percentage}% OFF
-                            </Badge>
+                    {featuredDeals.length === 1 ? (
+                      // Single deal - no carousel
+                      <Link to={`/deal/${featuredDeals[0].deals.slug}`} className="block group">
+                        <div className="aspect-video bg-gray-100 overflow-hidden">
+                          {featuredDeals[0].deals.image_url && (
+                            <img
+                              src={featuredDeals[0].deals.image_url}
+                              alt={featuredDeals[0].deals.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
                           )}
                         </div>
-                        <a
-                          href={stats.hotDeal.affiliate_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button variant="limited-time" className="w-full hover:opacity-90">
-                            Get This Deal
-                          </Button>
-                        </a>
-                      </div>
-                    </Link>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-sm mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
+                            {featuredDeals[0].deals.title}
+                          </h3>
+                          <div className="flex items-center justify-between mb-3">
+                            <Badge className="bg-red-500 hover:bg-red-600 text-white">
+                              {featuredDeals[0].deals.heat_score}° Hot
+                            </Badge>
+                            {featuredDeals[0].deals.discount_percentage && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                -{featuredDeals[0].deals.discount_percentage}% OFF
+                              </Badge>
+                            )}
+                          </div>
+                          <a
+                            href={featuredDeals[0].deals.affiliate_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button variant="limited-time" className="w-full hover:opacity-90">
+                              Get This Deal
+                            </Button>
+                          </a>
+                        </div>
+                      </Link>
+                    ) : (
+                      // Multiple deals - with carousel
+                      <Carousel className="w-full">
+                        <CarouselContent>
+                          {featuredDeals.map((featuredDeal) => (
+                            <CarouselItem key={featuredDeal.id}>
+                              <Link to={`/deal/${featuredDeal.deals.slug}`} className="block group">
+                                <div className="aspect-video bg-gray-100 overflow-hidden">
+                                  {featuredDeal.deals.image_url && (
+                                    <img
+                                      src={featuredDeal.deals.image_url}
+                                      alt={featuredDeal.deals.title}
+                                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                    />
+                                  )}
+                                </div>
+                                <div className="p-4">
+                                  <h3 className="font-semibold text-sm mb-3 line-clamp-2 group-hover:text-red-600 transition-colors">
+                                    {featuredDeal.deals.title}
+                                  </h3>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <Badge className="bg-red-500 hover:bg-red-600 text-white">
+                                      {featuredDeal.deals.heat_score}° Hot
+                                    </Badge>
+                                    {featuredDeal.deals.discount_percentage && (
+                                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                        -{featuredDeal.deals.discount_percentage}% OFF
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <a
+                                    href={featuredDeal.deals.affiliate_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Button variant="limited-time" className="w-full hover:opacity-90">
+                                      Get This Deal
+                                    </Button>
+                                  </a>
+                                </div>
+                              </Link>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        <CarouselPrevious className="left-2" />
+                        <CarouselNext className="right-2" />
+                      </Carousel>
+                    )}
                   </CardContent>
                 </Card>
               )}

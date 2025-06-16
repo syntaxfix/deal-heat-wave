@@ -16,6 +16,7 @@ import { SettingsAdmin } from "@/components/admin/SettingsAdmin";
 import { ShopsAdmin } from "@/components/admin/ShopsAdmin";
 import { BlogPostsAdmin } from "@/components/admin/BlogPostsAdmin";
 import { CouponsAdmin } from "@/components/admin/CouponsAdmin";
+import { FeaturedDealsAdmin } from "@/components/admin/FeaturedDealsAdmin";
 
 const RootDashboard = () => {
   return (
@@ -24,9 +25,10 @@ const RootDashboard = () => {
       <div className="container mx-auto py-10">
         <h1 className="text-3xl font-bold mb-6">Root Dashboard</h1>
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-10">
+          <TabsList className="grid w-full grid-cols-11">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="deals">Deals</TabsTrigger>
+            <TabsTrigger value="featured">Featured</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="tags">Tags</TabsTrigger>
             <TabsTrigger value="shops">Shops</TabsTrigger>
@@ -43,6 +45,10 @@ const RootDashboard = () => {
 
           <TabsContent value="deals">
              <DealsAdmin />
+          </TabsContent>
+
+          <TabsContent value="featured">
+            <FeaturedDealsAdmin />
           </TabsContent>
 
           <TabsContent value="categories">

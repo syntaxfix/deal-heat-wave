@@ -1,436 +1,282 @@
+
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import DealListings from '@/components/DealListings';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import ShopDetailSidebar from '@/components/ShopDetailSidebar';
+import CategoryFilterBar from '@/components/CategoryFilterBar';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Store, ExternalLink, Copy, Check } from 'lucide-react';
-import { toast } from 'sonner';
-import MDEditor from '@uiw/react-md-editor';
-import { useCurrencySetting } from '@/hooks/useCurrencySetting';
+import { ExternalLink, MapPin, Globe } from 'lucide-react';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 interface Shop {
   id: string;
   name: string;
   slug: string;
-  description: string;
-  logo_url: string;
-  website_url: string;
-  category: string;
+  description?: string;
   long_description?: string;
+  logo_url?: string;
+  banner_url?: string;
+  website_url?: string;
+  category?: string;
   meta_title?: string;
   meta_description?: string;
-  canonical_url?: string;
+  meta_keywords?: string;
 }
 
-interface Deal {
-  id: string;
-  title: string;
-  description: string;
-  summary?: string;
-  image_url: string;
-  original_price: number;
-  discounted_price: number;
-  discount_percentage: number;
-  heat_score: number;
-  upvotes: number;
-  downvotes: number;
-  created_at: string;
-  affiliate_link: string;
-  slug?: string;
-  categories: { name: string; slug: string };
-}
-
-interface Coupon {
-  id: string;
-  title: string;
-  description: string;
-  code: string;
-  discount_percentage: number;
-  discount_amount: number;
-  expires_at: string;
-  verified: boolean;
-}
-
-interface OtherShop {
-  id: string;
-  name:string;
-  slug: string;
-  logo_url: string;
-}
-
-interface PageCategory {
+interface Category {
   id: string;
   name: string;
   slug: string;
 }
 
+interface Coupon {
+  id: string;
+  title: string;
+  code: string;
+  discount_percentage?: number;
+  discount_amount?: number;
+  verified: boolean;
+}
+
+const fetchShopBySlug = async (slug: string) => {
+  const { data, error } = await supabase
+    .from('shops')
+    .select('*')
+    .eq('slug', slug)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Shop;
+};
+
+const fetchCategories = async () => {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, slug')
+    .order('name');
+
+  if (error) throw new Error(error.message);
+  return data as Category[];
+};
+
+const fetchShopCoupons = async (shopId: string) => {
+  const { data, error } = await supabase
+    .from('coupons')
+    .select('*')
+    .eq('shop_id', shopId)
+    .order('verified', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data as Coupon[];
+};
+
 const ShopDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [otherShops, setOtherShops] = useState<OtherShop[]>([]);
-  const [allCategories, setAllCategories] = useState<PageCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const { data: currency, isLoading: isCurrencyLoading } = useCurrencySetting();
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [sortBy, setSortBy] = useState('hot');
 
-  useEffect(() => {
-    if (slug) {
-      fetchShopData();
-    }
-  }, [slug]);
+  const { data: shop, isLoading: shopLoading } = useQuery({
+    queryKey: ['shop', slug],
+    queryFn: () => fetchShopBySlug(slug!),
+    enabled: !!slug,
+  });
 
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+  });
+
+  const { data: coupons } = useQuery({
+    queryKey: ['shop-coupons', shop?.id],
+    queryFn: () => fetchShopCoupons(shop!.id),
+    enabled: !!shop?.id,
+  });
+
+  // Update page metadata when shop loads
   useEffect(() => {
     if (shop) {
-      // Set meta tags
-      document.title = shop.meta_title || `${shop.name} Deals & Coupons - DealSpark`;
+      document.title = shop.meta_title || `${shop.name} Deals - Best Discounts & Coupons`;
       
-      const metaDescriptionTag = document.querySelector('meta[name="description"]');
-      if (metaDescriptionTag) {
-          metaDescriptionTag.setAttribute('content', shop.meta_description || shop.description || `Find the latest deals and coupons from ${shop.name} on DealSpark.`);
+      // Update meta description
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.setAttribute('name', 'description');
+        document.head.appendChild(metaDescription);
       }
+      metaDescription.setAttribute('content', 
+        shop.meta_description || `Find the best ${shop.name} deals, discounts, and coupons. Save money on top products from ${shop.name}.`
+      );
 
-      let canonicalLink = document.querySelector('link[rel="canonical"]');
-      if (!canonicalLink) {
-          canonicalLink = document.createElement('link');
-          canonicalLink.setAttribute('rel', 'canonical');
-          document.head.appendChild(canonicalLink);
+      // Update meta keywords
+      let metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (shop.meta_keywords) {
+        if (!metaKeywords) {
+          metaKeywords = document.createElement('meta');
+          metaKeywords.setAttribute('name', 'keywords');
+          document.head.appendChild(metaKeywords);
+        }
+        metaKeywords.setAttribute('content', shop.meta_keywords);
+      } else if (metaKeywords) {
+        metaKeywords.remove();
       }
-      canonicalLink.setAttribute('href', shop.canonical_url || window.location.href);
-      fetchOtherData();
     }
   }, [shop]);
 
-  const fetchShopData = async () => {
-    if (!slug) return;
-
-    // Fetch shop details
-    const { data: shopData, error: shopError } = await supabase
-      .from('shops')
-      .select('*')
-      .eq('slug', slug)
-      .maybeSingle();
-
-    if (shopError) {
-      console.error('Error fetching shop:', shopError);
-      setLoading(false);
-      return;
-    }
-
-    setShop(shopData);
-
-    // Fetch coupons for this shop
-    const { data: couponsData, error: couponsError } = await supabase
-      .from('coupons')
-      .select('*')
-      .eq('shop_id', shopData.id)
-      .order('created_at', { ascending: false });
-
-    if (!couponsError) {
-      setCoupons(couponsData || []);
-    }
-
-    setLoading(false);
-  };
-
-  const fetchOtherData = async () => {
-    if (!shop || !shop.category) return;
-
-    // Fetch other shops in the same category
-    const { data: shopsData, error: shopsError } = await supabase
-        .from('shops')
-        .select('id, name, slug, logo_url')
-        .eq('category', shop.category)
-        .neq('id', shop.id)
-        .limit(4);
-
-    if (shopsError) {
-        console.error('Error fetching other shops:', shopsError);
-    } else {
-        setOtherShops(shopsData || []);
-    }
-
-    // Fetch all categories
-    const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id, name, slug')
-        .order('name');
-    
-    if (categoriesError) {
-        console.error('Error fetching categories:', categoriesError);
-    } else {
-        setAllCategories(categoriesData || []);
-    }
-  };
-
-  const handleCopyCoupon = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopiedCode(code);
-      toast.success('Coupon code copied!');
-      setTimeout(() => setCopiedCode(null), 2000);
-    } catch (error) {
-      toast.error('Failed to copy coupon code');
-    }
-  };
-
-  if (loading) {
+  if (shopLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div>
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="max-w-6xl mx-auto">
-            <Skeleton className="h-8 w-32 mb-6" />
-            <div className="flex items-center space-x-4 mb-8">
-              <Skeleton className="h-20 w-20 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-64" />
-              </div>
-            </div>
-            <Skeleton className="h-10 w-full mb-6" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="animate-pulse">
+            <div className="h-32 bg-gray-200 rounded w-full mb-8"></div>
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-80" />
+                <div key={i} className="h-64 bg-gray-200 rounded"></div>
               ))}
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   if (!shop) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div>
         <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-6xl mx-auto text-center">
-            <Store className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Shop not found
-            </h1>
-            <p className="text-gray-600 mb-6">
-              The shop you're looking for doesn't exist or has been removed.
-            </p>
-            <Button asChild>
-              <Link to="/shops">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Shops
-              </Link>
-            </Button>
-          </div>
+        <div className="container mx-auto px-4 py-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Shop Not Found</h1>
+          <p className="text-gray-600">The shop you're looking for doesn't exist.</p>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div>
       <Header />
+      
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Back Button */}
-          <Button variant="ghost" asChild className="mb-6">
-            <Link to="/shops">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Shops
-            </Link>
-          </Button>
+        {/* Breadcrumb */}
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/shops">Shops</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbPage>{shop.name}</BreadcrumbPage>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-          {/* Shop Header */}
-          <Card className="mb-8">
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={shop.logo_url} alt={shop.name} />
-                  <AvatarFallback>
-                    <Store className="h-10 w-10" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900">{shop.name}</h1>
-                    {shop.category && (
-                      <Badge variant="secondary">{shop.category}</Badge>
-                    )}
-                  </div>
-                  {shop.description && (
-                    <p className="text-gray-600 mb-4">{shop.description}</p>
-                  )}
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm text-gray-600">
-                      {coupons.length} coupons
-                    </span>
-                    {shop.website_url && (
-                      <a
-                        href={shop.website_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center space-x-1 text-sm text-primary hover:underline"
-                      >
-                        <span>Visit Store</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Shop Banner */}
+        {shop.banner_url && (
+          <div className="relative h-48 md:h-64 rounded-xl overflow-hidden mb-8">
+            <img
+              src={shop.banner_url}
+              alt={`${shop.name} banner`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/20"></div>
+          </div>
+        )}
 
-          {/* Tabs */}
-          <Tabs defaultValue="deals" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="deals">Deals</TabsTrigger>
-              <TabsTrigger value="coupons">Coupons ({coupons.length})</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="deals">
-              <DealListings
-                shopSlug={slug}
-                sortBy="newest"
+        {/* Shop Header */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 mb-6">
+            {shop.logo_url && (
+              <img
+                src={shop.logo_url}
+                alt={`${shop.name} logo`}
+                className="w-24 h-24 object-contain bg-white rounded-lg border shadow-sm"
               />
-            </TabsContent>
-
-            <TabsContent value="coupons">
-              {coupons.length === 0 ? (
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      No coupons available
-                    </h3>
-                    <p className="text-gray-600">
-                      Check back soon for new coupons from {shop.name}!
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {coupons.map((coupon) => (
-                    <Card key={coupon.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">{coupon.title}</CardTitle>
-                          {coupon.verified && (
-                            <Badge variant="secondary">Verified</Badge>
-                          )}
-                        </div>
-                        {coupon.description && (
-                          <CardDescription>{coupon.description}</CardDescription>
-                        )}
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">Code:</span>
-                            <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
-                              {coupon.code}
-                            </code>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="limited-time"
-                            onClick={() => handleCopyCoupon(coupon.code)}
-                            className="flex items-center space-x-1"
-                          >
-                            {copiedCode === coupon.code ? (
-                              <Check className="h-3 w-3" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                            <span>{copiedCode === coupon.code ? 'Copied' : 'Copy'}</span>
-                          </Button>
-                        </div>
-                        
-                        <div className="text-sm text-gray-600">
-                          {coupon.discount_percentage && (
-                            <p>Save {coupon.discount_percentage}%</p>
-                          )}
-                          {coupon.discount_amount && (
-                            <p>Save {isCurrencyLoading ? <Skeleton className="h-4 w-10 inline-block" /> : <span>{currency?.symbol}{coupon.discount_amount}</span>}</p>
-                          )}
-                          {coupon.expires_at && (
-                            <p>Expires: {new Date(coupon.expires_at).toLocaleDateString()}</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+            )}
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-3">
+                <h1 className="text-4xl font-bold text-gray-900">{shop.name}</h1>
+                <Badge variant="secondary" className="text-sm">Store</Badge>
+                {shop.category && (
+                  <Badge variant="outline" className="text-sm">
+                    {shop.category}
+                  </Badge>
+                )}
+              </div>
+              
+              {shop.description && (
+                <p className="text-xl text-gray-600 mb-4">{shop.description}</p>
               )}
-            </TabsContent>
-          </Tabs>
-          
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-3">
-              {shop.long_description && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>About {shop.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div data-color-mode="light">
-                      <MDEditor.Markdown source={shop.long_description} style={{ background: 'transparent' }} />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            <div className="lg:col-span-1 space-y-8">
-              {otherShops.length > 0 && (
-                  <Card>
-                      <CardHeader>
-                          <CardTitle className="text-xl">More in {shop.category}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <div className="space-y-4">
-                              {otherShops.map(otherShop => (
-                                  <Link key={otherShop.id} to={`/shops/${otherShop.slug}`} className="flex items-center space-x-3 group">
-                                      <Avatar className="h-10 w-10">
-                                          <AvatarImage src={otherShop.logo_url} alt={otherShop.name} />
-                                          <AvatarFallback>{otherShop.name.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                      <span className="font-medium group-hover:text-primary">{otherShop.name}</span>
-                                  </Link>
-                              ))}
-                          </div>
-                      </CardContent>
-                  </Card>
-              )}
-
-              {allCategories.length > 0 && (
-                  <Card>
-                      <CardHeader>
-                          <CardTitle className="text-xl">All Categories</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <div className="flex flex-wrap gap-2">
-                              {allCategories.map(category => (
-                                  <Button key={category.id} variant="outline" size="sm" asChild>
-                                      <Link to={`/categories/${category.slug}`}>
-                                          {category.name}
-                                      </Link>
-                                  </Button>
-                              ))}
-                          </div>
-                      </CardContent>
-                  </Card>
-              )}
+              
+              <div className="flex flex-wrap gap-3">
+                {shop.website_url && (
+                  <a
+                    href={shop.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Visit Store
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-
+          
+          {shop.long_description && (
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+              <CardContent className="p-6">
+                <p className="text-gray-700 leading-relaxed">
+                  {shop.long_description}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
+        {/* Filter Bar (shop is locked) */}
+        <CategoryFilterBar
+          shops={[]}
+          selectedShop=""
+          sortBy={sortBy}
+          onShopChange={() => {}} // No-op since shop is locked
+          onSortChange={setSortBy}
+          categoryName={`${shop.name} Deals`}
+        />
+
+        {/* Deal Listings */}
+        <DealListings
+          categorySlug={selectedCategory}
+          shopSlug={slug}
+          sortBy={sortBy}
+        />
+
+        {/* Horizontal Sidebar */}
+        <ShopDetailSidebar
+          categories={categories || []}
+          coupons={coupons || []}
+          shopName={shop.name}
+        />
       </div>
+      
+      <Footer />
     </div>
   );
 };
