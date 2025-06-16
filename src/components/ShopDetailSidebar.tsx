@@ -49,7 +49,7 @@ const ShopDetailSidebar = ({ categories, coupons, shopName }: ShopDetailSidebarP
                     {coupon.title}
                   </h4>
                   {coupon.verified && (
-                    <Badge variant="success" className="text-xs">
+                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
                       ✓ Verified
                     </Badge>
                   )}

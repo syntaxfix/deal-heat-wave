@@ -27,8 +27,7 @@ export const useCurrencySetting = () => {
         queryKey: ['system_settings', 'currency'],
         queryFn: fetchCurrencySetting,
         staleTime: 1000 * 60 * 5, // 5 minutes
-        // By setting a staleTime, we prevent unnecessary refetches on events like window focus,
-        // which can sometimes cause cascading re-renders and race conditions.
-        // Explicit invalidation from the settings page will still trigger an immediate refetch.
+        // This ensures the currency setting is sitewide and updates globally
+        // when the root admin changes it in the settings
     });
 }

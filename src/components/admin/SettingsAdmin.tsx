@@ -53,6 +53,8 @@ const upsertSettings = async (settings: SettingsFormValues) => {
 
     const { error } = await supabase.from('system_settings').upsert(settingsToUpsert, { onConflict: 'key' });
     if (error) throw error;
+    
+    return settings;
 };
 
 export const SettingsAdmin = () => {
@@ -61,9 +63,14 @@ export const SettingsAdmin = () => {
 
   const mutation = useMutation({
     mutationFn: upsertSettings,
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Settings updated successfully!');
       queryClient.invalidateQueries({ queryKey: ['system_settings'] });
+      
+      // If currency was changed, invalidate currency queries globally to update sitewide
+      if (data?.site_currency) {
+        queryClient.invalidateQueries({ queryKey: ['system_settings', 'currency'] });
+      }
     },
     onError: (error: any) => {
       toast.error(`Error updating settings: ${error.message}`);
@@ -104,7 +111,7 @@ export const SettingsAdmin = () => {
         <Card>
             <CardHeader>
                 <CardTitle>Site Settings</CardTitle>
-                <CardDescription>Manage general site settings for SEO and analytics.</CardDescription>
+                <CardDescription>Manage general site settings for SEO and analytics. Currency changes will apply sitewide.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>
@@ -147,7 +154,7 @@ export const SettingsAdmin = () => {
                             name="site_currency"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Site Currency</FormLabel>
+                                <FormLabel>Site Currency (Sitewide Setting)</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl>
                                     <SelectTrigger>
