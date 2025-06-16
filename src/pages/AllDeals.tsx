@@ -4,10 +4,41 @@ import Footer from '@/components/Footer';
 import DealListings from '@/components/DealListings';
 import FilterBar from '@/components/FilterBar';
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const AllDeals = () => {
   const [sortBy, setSortBy] = useState('hot');
-  const [categorySlug, setCategorySlug] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedShop, setSelectedShop] = useState('');
+
+  // Fetch categories for the filter
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch shops for the filter
+  const { data: shops = [] } = useQuery({
+    queryKey: ['shops'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shops')
+        .select('id, name, slug')
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -20,14 +51,18 @@ const AllDeals = () => {
           </div>
           
           <FilterBar 
+            categories={categories}
+            shops={shops}
+            selectedCategory={selectedCategory}
+            selectedShop={selectedShop}
             sortBy={sortBy}
+            onCategoryChange={setSelectedCategory}
+            onShopChange={setSelectedShop}
             onSortChange={setSortBy}
-            categorySlug={categorySlug}
-            onCategoryChange={setCategorySlug}
           />
           
           <DealListings 
-            categorySlug={categorySlug}
+            categorySlug={selectedCategory}
             sortBy={sortBy}
           />
         </div>
