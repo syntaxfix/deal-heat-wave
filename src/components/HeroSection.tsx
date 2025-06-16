@@ -1,66 +1,98 @@
 
 import { Button } from '@/components/ui/button';
-import { Search, Flame, TrendingUp, Users } from 'lucide-react';
+import { Search, Flame, TrendingUp, Users, Star, Clock, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const HeroSection = () => {
   return (
-    <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20">
-      <div className="container mx-auto px-4">
+    <section className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-10 left-10 w-20 h-20 border-2 border-white rounded-full"></div>
+        <div className="absolute top-32 right-20 w-16 h-16 border-2 border-white rounded-full"></div>
+        <div className="absolute bottom-20 left-1/4 w-12 h-12 border-2 border-white rounded-full"></div>
+        <div className="absolute bottom-32 right-1/3 w-8 h-8 border-2 border-white rounded-full"></div>
+      </div>
+
+      <div className="relative container mx-auto px-4 py-20">
         <div className="text-center max-w-4xl mx-auto">
           <div className="flex items-center justify-center mb-6">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl">
-              <Flame className="h-8 w-8 text-white" />
+            <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+              <Flame className="h-12 w-12 text-white" />
             </div>
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Discover the Hottest
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Deals</span>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            Discover Amazing
+            <span className="block bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+              Deals & Savings
+            </span>
           </h1>
           
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Join our community of deal hunters and discover exclusive discounts, limited-time offers, and amazing bargains from top retailers worldwide.
+          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed text-blue-100">
+            Join millions of deal hunters finding exclusive discounts, flash sales, and unbeatable offers from your favorite brands.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" asChild className="text-lg px-8 py-6">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Button size="lg" variant="secondary" asChild className="text-lg px-8 py-6 bg-white text-blue-600 hover:bg-blue-50">
               <Link to="/deals">
                 <Search className="mr-2 h-5 w-5" />
-                Explore Deals
+                Browse All Deals
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6">
+            <Button size="lg" variant="outline" asChild className="text-lg px-8 py-6 border-white text-white hover:bg-white/10">
               <Link to="/post-deal">
-                <TrendingUp className="mr-2 h-5 w-5" />
-                Submit a Deal
+                <Gift className="mr-2 h-5 w-5" />
+                Share a Deal
               </Link>
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-            <div className="text-center">
-              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-blue-600" />
+          {/* Stats Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
+            <div className="text-center p-6 bg-white/10 rounded-2xl backdrop-blur-sm">
+              <div className="bg-yellow-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-yellow-900" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Community Driven</h3>
-              <p className="text-gray-600 text-sm">Deals voted and verified by our active community</p>
+              <h3 className="font-bold text-2xl mb-2">50K+</h3>
+              <p className="text-blue-100">Active Deal Hunters</p>
             </div>
             
-            <div className="text-center">
-              <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Flame className="h-8 w-8 text-purple-600" />
+            <div className="text-center p-6 bg-white/10 rounded-2xl backdrop-blur-sm">
+              <div className="bg-green-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Flame className="h-8 w-8 text-green-900" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Hot Deals</h3>
-              <p className="text-gray-600 text-sm">Fresh deals updated every day from top retailers</p>
+              <h3 className="font-bold text-2xl mb-2">1000+</h3>
+              <p className="text-blue-100">Hot Deals Daily</p>
             </div>
             
-            <div className="text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="h-8 w-8 text-green-600" />
+            <div className="text-center p-6 bg-white/10 rounded-2xl backdrop-blur-sm">
+              <div className="bg-orange-400 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="h-8 w-8 text-orange-900" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Trending Now</h3>
-              <p className="text-gray-600 text-sm">Discover what's popular and save big today</p>
+              <h3 className="font-bold text-2xl mb-2">$2M+</h3>
+              <p className="text-blue-100">Money Saved</p>
+            </div>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="text-center p-6 bg-white/5 rounded-xl backdrop-blur-sm border border-white/20">
+              <Clock className="h-8 w-8 text-yellow-300 mx-auto mb-3" />
+              <h3 className="font-semibold text-lg mb-2">Real-Time Updates</h3>
+              <p className="text-blue-100 text-sm">Get notified instantly when new deals go live</p>
+            </div>
+            
+            <div className="text-center p-6 bg-white/5 rounded-xl backdrop-blur-sm border border-white/20">
+              <TrendingUp className="h-8 w-8 text-green-300 mx-auto mb-3" />
+              <h3 className="font-semibold text-lg mb-2">Trending Deals</h3>
+              <p className="text-blue-100 text-sm">Discover what's hot and popular right now</p>
+            </div>
+            
+            <div className="text-center p-6 bg-white/5 rounded-xl backdrop-blur-sm border border-white/20">
+              <Users className="h-8 w-8 text-purple-300 mx-auto mb-3" />
+              <h3 className="font-semibold text-lg mb-2">Community Driven</h3>
+              <p className="text-blue-100 text-sm">Deals rated and verified by our community</p>
             </div>
           </div>
         </div>

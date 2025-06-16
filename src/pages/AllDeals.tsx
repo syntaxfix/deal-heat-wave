@@ -63,6 +63,7 @@ const AllDeals = () => {
           
           <DealListings 
             categorySlug={selectedCategory}
+            shopSlug={selectedShop}
             sortBy={sortBy}
           />
         </div>
