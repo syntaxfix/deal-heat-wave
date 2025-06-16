@@ -25,6 +25,9 @@ const CategoryFilterBar = ({
   onSortChange,
   categoryName
 }: CategoryFilterBarProps) => {
+  // Filter out shops with empty slugs
+  const validShops = shops.filter(shop => shop.slug && shop.slug.trim() !== '');
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border mb-8">
       <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -48,7 +51,7 @@ const CategoryFilterBar = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">All Shops</SelectItem>
-                {shops.map((shop) => (
+                {validShops.map((shop) => (
                   <SelectItem key={shop.id} value={shop.slug}>
                     {shop.name}
                   </SelectItem>
