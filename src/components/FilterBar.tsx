@@ -1,3 +1,4 @@
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -63,6 +64,10 @@ const FilterBar = ({
   const categoryValue = selectedCategory === '' ? 'all' : selectedCategory;
   const shopValue = selectedShop === '' ? 'all' : selectedShop;
 
+  // Filter out categories and shops with empty slugs
+  const validCategories = categories.filter(category => category.slug && category.slug.trim() !== '');
+  const validShops = shops.filter(shop => shop.slug && shop.slug.trim() !== '');
+
   return (
     <Card className="mb-6">
       <CardContent className="pt-4">
@@ -81,7 +86,7 @@ const FilterBar = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
+                  {validCategories.map((category) => (
                     <SelectItem key={category.id} value={category.slug}>
                       {category.name}
                     </SelectItem>
@@ -96,7 +101,7 @@ const FilterBar = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Shops</SelectItem>
-                  {shops.map((shop) => (
+                  {validShops.map((shop) => (
                     <SelectItem key={shop.id} value={shop.slug}>
                       {shop.name}
                     </SelectItem>
