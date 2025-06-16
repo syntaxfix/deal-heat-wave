@@ -164,6 +164,9 @@ const ShopDetail = () => {
     );
   }
 
+  // Filter out shops with empty slugs before passing to CategoryFilterBar
+  const validShops = [];
+
   return (
     <div>
       <Header />
@@ -253,7 +256,7 @@ const ShopDetail = () => {
 
         {/* Filter Bar (shop is locked) */}
         <CategoryFilterBar
-          shops={[]}
+          shops={validShops}
           selectedShop=""
           sortBy={sortBy}
           onShopChange={() => {}} // No-op since shop is locked
