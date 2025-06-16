@@ -28,6 +28,14 @@ const CategoryFilterBar = ({
   // Filter out shops with empty slugs
   const validShops = shops.filter(shop => shop.slug && shop.slug.trim() !== '');
 
+  // Handle shop change to convert "all-shops" back to empty string
+  const handleShopChange = (value: string) => {
+    onShopChange(value === 'all-shops' ? '' : value);
+  };
+
+  // Convert empty string to "all-shops" for the Select component
+  const shopValue = selectedShop === '' ? 'all-shops' : selectedShop;
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border mb-8">
       <div className="flex flex-col md:flex-row gap-4 items-center">
@@ -45,12 +53,12 @@ const CategoryFilterBar = ({
             <Label htmlFor="shop-filter" className="text-sm font-medium text-gray-700">
               Shop
             </Label>
-            <Select value={selectedShop} onValueChange={onShopChange}>
+            <Select value={shopValue} onValueChange={handleShopChange}>
               <SelectTrigger id="shop-filter">
                 <SelectValue placeholder="All Shops" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Shops</SelectItem>
+                <SelectItem value="all-shops">All Shops</SelectItem>
                 {validShops.map((shop) => (
                   <SelectItem key={shop.id} value={shop.slug}>
                     {shop.name}
