@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Store, ExternalLink, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import MDEditor from '@uiw/react-md-editor';
+import { SEOHead } from '@/components/SEOHead';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 interface Shop {
   id: string;
@@ -178,6 +180,22 @@ const ShopDetail = () => {
     }
   };
 
+  const breadcrumbItems = shop ? [
+    { label: "Home", href: "/" },
+    { label: "Shops", href: "/shops" },
+    { label: shop.name }
+  ] : [];
+
+  const structuredData = shop ? {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "name": shop.name,
+    "description": shop.description,
+    "url": shop.website_url,
+    "image": shop.logo_url,
+    "category": shop.category
+  } : undefined;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -208,6 +226,10 @@ const ShopDetail = () => {
   if (!shop) {
     return (
       <div className="min-h-screen bg-gray-50">
+        <SEOHead 
+          title="Shop not found - DealSpark"
+          description="The shop you're looking for doesn't exist or has been removed."
+        />
         <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto text-center">
@@ -230,11 +252,25 @@ const ShopDetail = () => {
     );
   }
 
+  const hasNoCoupons = coupons.length === 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead 
+        title={shop.meta_title || `${shop.name} Deals & Coupons - DealSpark`}
+        description={shop.meta_description || shop.description || `Find the latest deals and coupons from ${shop.name} on DealSpark.`}
+        canonical={shop.canonical_url || window.location.href}
+        ogTitle={`${shop.name} - Best Deals & Coupons`}
+        ogDescription={shop.description || `Discover amazing deals from ${shop.name}`}
+        ogImage={shop.logo_url}
+        ogUrl={window.location.href}
+        structuredData={structuredData}
+      />
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          <Breadcrumbs items={breadcrumbItems} className="mb-6" />
+
           {/* Back Button */}
           <Button variant="ghost" asChild className="mb-6">
             <Link to="/shops">
@@ -368,8 +404,8 @@ const ShopDetail = () => {
             </TabsContent>
           </Tabs>
           
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-3">
+          <div className={`mt-8 ${hasNoCoupons ? 'grid grid-cols-1' : 'grid grid-cols-1 lg:grid-cols-4'} gap-8`}>
+            <div className={hasNoCoupons ? 'col-span-1' : 'lg:col-span-3'}>
               {shop.long_description && (
                 <Card>
                   <CardHeader>
@@ -384,49 +420,95 @@ const ShopDetail = () => {
               )}
             </div>
 
-            <div className="lg:col-span-1 space-y-8">
+            {!hasNoCoupons && (
+              <div className="lg:col-span-1 space-y-8">
+                {otherShops.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-xl">More in {shop.category}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {otherShops.map(otherShop => (
+                                    <Link key={otherShop.id} to={`/shop/${otherShop.slug}`} className="flex items-center space-x-3 group">
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarImage src={otherShop.logo_url} alt={otherShop.name} />
+                                            <AvatarFallback>{otherShop.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="font-medium group-hover:text-primary">{otherShop.name}</span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {allCategories.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-xl">All Categories</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-wrap gap-2">
+                                {allCategories.map(category => (
+                                    <Button key={category.id} variant="outline" size="sm" asChild>
+                                        <Link to={`/category/${category.slug}`}>
+                                            {category.name}
+                                        </Link>
+                                    </Button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* When no coupons, show related content in horizontal layout */}
+          {hasNoCoupons && (otherShops.length > 0 || allCategories.length > 0) && (
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
               {otherShops.length > 0 && (
-                  <Card>
-                      <CardHeader>
-                          <CardTitle className="text-xl">More in {shop.category}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <div className="space-y-4">
-                              {otherShops.map(otherShop => (
-                                  <Link key={otherShop.id} to={`/shops/${otherShop.slug}`} className="flex items-center space-x-3 group">
-                                      <Avatar className="h-10 w-10">
-                                          <AvatarImage src={otherShop.logo_url} alt={otherShop.name} />
-                                          <AvatarFallback>{otherShop.name.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                      <span className="font-medium group-hover:text-primary">{otherShop.name}</span>
-                                  </Link>
-                              ))}
-                          </div>
-                      </CardContent>
-                  </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl">More in {shop.category}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {otherShops.map(otherShop => (
+                        <Link key={otherShop.id} to={`/shop/${otherShop.slug}`} className="flex items-center space-x-3 group">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={otherShop.logo_url} alt={otherShop.name} />
+                            <AvatarFallback>{otherShop.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium group-hover:text-primary">{otherShop.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {allCategories.length > 0 && (
-                  <Card>
-                      <CardHeader>
-                          <CardTitle className="text-xl">All Categories</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                          <div className="flex flex-wrap gap-2">
-                              {allCategories.map(category => (
-                                  <Button key={category.id} variant="outline" size="sm" asChild>
-                                      <Link to={`/categories/${category.slug}`}>
-                                          {category.name}
-                                      </Link>
-                                  </Button>
-                              ))}
-                          </div>
-                      </CardContent>
-                  </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl">All Categories</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {allCategories.map(category => (
+                        <Button key={category.id} variant="outline" size="sm" asChild>
+                          <Link to={`/category/${category.slug}`}>
+                            {category.name}
+                          </Link>
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
-          </div>
-
+          )}
         </div>
       </div>
     </div>

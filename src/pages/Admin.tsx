@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Shield, Check, X } from 'lucide-react';
 import Header from '@/components/Header';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { SEOHead } from '@/components/SEOHead';
 
 interface Deal {
   id: string;
@@ -25,6 +28,11 @@ export default function Admin() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [pendingDeals, setPendingDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "Admin Dashboard" }
+  ];
 
   useEffect(() => {
     if (user) {
@@ -129,87 +137,95 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Shield className="h-6 w-6 text-primary" />
+    <ProtectedRoute requiredRole="admin" redirectTo="/login">
+      <div className="min-h-screen bg-gray-50">
+        <SEOHead 
+          title="Admin Dashboard - DealSpark"
+          description="Admin dashboard for managing deals, users, and site content."
+        />
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <Breadcrumbs items={breadcrumbItems} className="mb-6" />
+          
+          <div className="mb-8">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             </div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            <p className="text-gray-600">Manage deals, users, and site content</p>
           </div>
-          <p className="text-gray-600">Manage deals, users, and site content</p>
-        </div>
 
-        <Tabs defaultValue="deals" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="deals">Pending Deals ({pendingDeals.length})</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="deals" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="deals">Pending Deals ({pendingDeals.length})</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="deals">
-            <div className="space-y-4">
-              {pendingDeals.length === 0 ? (
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <p className="text-gray-600">No pending deals to review.</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                pendingDeals.map((deal) => (
-                  <Card key={deal.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">{deal.title}</CardTitle>
-                          <CardDescription>
-                            Posted by @{deal.profiles?.username || 'Unknown'} on{' '}
-                            {new Date(deal.created_at).toLocaleDateString()}
-                          </CardDescription>
-                        </div>
-                        <Badge variant="secondary">Pending</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600 mb-4">{deal.description}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm">
-                          <span className="line-through text-gray-400">
-                            ${deal.original_price}
-                          </span>
-                          <span className="ml-2 font-semibold text-green-600">
-                            ${deal.discounted_price}
-                          </span>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleDealAction(deal.id, 'approved')}
-                            disabled={isLoading}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDealAction(deal.id, 'rejected')}
-                            disabled={isLoading}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                      </div>
+            <TabsContent value="deals">
+              <div className="space-y-4">
+                {pendingDeals.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <p className="text-gray-600">No pending deals to review.</p>
                     </CardContent>
                   </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+                ) : (
+                  pendingDeals.map((deal) => (
+                    <Card key={deal.id}>
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-lg">{deal.title}</CardTitle>
+                            <CardDescription>
+                              Posted by @{deal.profiles?.username || 'Unknown'} on{' '}
+                              {new Date(deal.created_at).toLocaleDateString()}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="secondary">Pending</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-gray-600 mb-4">{deal.description}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm">
+                            <span className="line-through text-gray-400">
+                              ${deal.original_price}
+                            </span>
+                            <span className="ml-2 font-semibold text-green-600">
+                              ${deal.discounted_price}
+                            </span>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleDealAction(deal.id, 'approved')}
+                              disabled={isLoading}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDealAction(deal.id, 'rejected')}
+                              disabled={isLoading}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, Users, Package, Clock, Star, ArrowRight, Zap, Gift, Target, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { categories } from '@/data/categories';
+import { SEOHead } from '@/components/SEOHead';
 
 interface Category {
   id: string;
@@ -182,8 +183,31 @@ const Index = () => {
     setSearchQuery(query);
   };
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "DealSpark",
+    "description": "Find amazing deals, voted by our community of savvy shoppers. Save up to 90% on your favorite products.",
+    "url": window.location.origin,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": `${window.location.origin}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <SEOHead 
+        title={settings?.homepage_meta_title || "DealSpark - Find Amazing Deals & Coupons"}
+        description={settings?.homepage_meta_description || "Discover hand-picked deals, voted by our community of savvy shoppers. Save up to 90% on your favorite products."}
+        keywords={settings?.homepage_meta_keywords || "deals, coupons, discounts, shopping, savings"}
+        canonical={window.location.origin}
+        ogTitle="DealSpark - Best Deals & Coupons Community"
+        ogDescription="Join thousands of deal hunters finding the best discounts and coupons online."
+        ogUrl={window.location.href}
+        structuredData={structuredData}
+      />
       <Header />
       
       {/* Enhanced Hero Section */}
