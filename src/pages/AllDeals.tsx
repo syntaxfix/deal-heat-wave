@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
@@ -6,6 +7,8 @@ import FilterBar from '@/components/FilterBar';
 import { ViewType } from '@/components/ViewSwitcher';
 import { Package } from 'lucide-react';
 import { categories } from '@/data/categories';
+import { SEOHead } from '@/components/SEOHead';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 interface Shop {
   id: string;
@@ -19,6 +22,11 @@ const AllDeals = () => {
   const [selectedShop, setSelectedShop] = useState('');
   const [sortBy, setSortBy] = useState('hot');
   const [viewType, setViewType] = useState<ViewType>('grid');
+
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "All Deals" }
+  ];
 
   useEffect(() => {
     fetchShops();
@@ -35,10 +43,28 @@ const AllDeals = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead 
+        title="All Deals - DealSpark | Hottest Deals & Discounts"
+        description="Discover amazing deals from all categories and stores. Find the hottest discounts, voted by our community of deal hunters."
+        keywords="deals, discounts, offers, savings, shopping, bargains"
+        canonical={`${window.location.origin}/deals`}
+        ogTitle="All Deals - DealSpark"
+        ogDescription="Discover amazing deals from all categories and stores"
+        ogUrl={`${window.location.origin}/deals`}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": "All Deals",
+          "description": "Collection of the hottest deals and discounts",
+          "url": `${window.location.origin}/deals`
+        }}
+      />
       <Header />
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          <Breadcrumbs items={breadcrumbItems} className="mb-6" />
+          
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-4">

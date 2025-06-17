@@ -1,170 +1,224 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
-import Header from '@/components/Header';
+import { SEOHead } from '@/components/SEOHead';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    message: '',
+    message: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "Contact" }
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       const { error } = await supabase
         .from('contact_submissions')
         .insert([formData]);
 
-      if (error) {
-        toast.error('Failed to send message. Please try again.');
-      } else {
-        toast.success('Message sent successfully! We\'ll get back to you soon.');
-        setFormData({ name: '', email: '', phone: '', message: '' });
-      }
+      if (error) throw error;
+
+      toast.success('Message sent successfully! We\'ll get back to you soon.');
+      setFormData({ name: '', email: '', phone: '', message: '' });
     } catch (error) {
-      toast.error('An unexpected error occurred');
+      console.error('Error submitting contact form:', error);
+      toast.error('Failed to send message. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead 
+        title="Contact Us - DealSpark | Get in Touch"
+        description="Contact DealSpark for support, partnerships, or general inquiries. We're here to help with all your deal hunting needs."
+        keywords="contact, support, help, inquiries, partnerships"
+        canonical={`${window.location.origin}/contact`}
+        ogTitle="Contact Us - DealSpark"
+        ogDescription="Get in touch with DealSpark"
+        ogUrl={`${window.location.origin}/contact`}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "ContactPage",
+          "name": "Contact DealSpark",
+          "description": "Contact page for DealSpark",
+          "url": `${window.location.origin}/contact`
+        }}
+      />
       <Header />
+      
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Contact Us</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Have a question, suggestion, or need help? We'd love to hear from you. 
-              Send us a message and we'll get back to you as soon as possible.
+          <Breadcrumbs items={breadcrumbItems} className="mb-6" />
+          
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
+            <p className="text-xl text-gray-600">
+              Have a question or want to get in touch? We'd love to hear from you.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Contact Information */}
+            {/* Contact Info */}
             <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Get in Touch</CardTitle>
-                  <CardDescription>
-                    Multiple ways to reach our team
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-start space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Mail className="h-5 w-5 text-primary" />
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader className="text-center">
+                    <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                      <Mail className="h-6 w-6 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold">Email</h3>
-                      <p className="text-sm text-gray-600">support@dealspark.com</p>
-                      <p className="text-xs text-gray-500 mt-1">We'll respond within 24 hours</p>
-                    </div>
-                  </div>
+                    <CardTitle>Email</CardTitle>
+                    <CardDescription>
+                      Send us an email anytime
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <a href="mailto:hello@dealspark.com" className="text-primary hover:underline">
+                      hello@dealspark.com
+                    </a>
+                  </CardContent>
+                </Card>
 
-                  <div className="flex items-start space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Phone className="h-5 w-5 text-primary" />
+                <Card>
+                  <CardHeader className="text-center">
+                    <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                      <Phone className="h-6 w-6 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold">Phone</h3>
-                      <p className="text-sm text-gray-600">+1 (555) 123-4567</p>
-                      <p className="text-xs text-gray-500 mt-1">Mon-Fri, 9AM-6PM EST</p>
-                    </div>
-                  </div>
+                    <CardTitle>Phone</CardTitle>
+                    <CardDescription>
+                      Call us during business hours
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <a href="tel:+1234567890" className="text-primary hover:underline">
+                      +1 (234) 567-890
+                    </a>
+                  </CardContent>
+                </Card>
 
-                  <div className="flex items-start space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <MapPin className="h-5 w-5 text-primary" />
+                <Card>
+                  <CardHeader className="text-center">
+                    <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                      <MapPin className="h-6 w-6 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold">Office</h3>
-                      <p className="text-sm text-gray-600">
-                        123 Deal Street<br />
-                        Savings City, SC 12345<br />
-                        United States
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    <CardTitle>Address</CardTitle>
+                    <CardDescription>
+                      Visit our office
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-gray-600">
+                      123 Deal Street<br />
+                      Shopping City, SC 12345<br />
+                      United States
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Contact Form */}
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Send us a Message</CardTitle>
+                  <CardTitle>Send us a message</CardTitle>
                   <CardDescription>
-                    Fill out the form below and we'll get back to you soon
+                    Fill out the form below and we'll get back to you as soon as possible.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="name">Full Name *</Label>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                          Name *
+                        </label>
                         <Input
                           id="name"
+                          name="name"
                           type="text"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                           required
-                          placeholder="Enter your full name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Your full name"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="email">Email Address *</Label>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                          Email *
+                        </label>
                         <Input
                           id="email"
+                          name="email"
                           type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           required
-                          placeholder="Enter your email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="your@email.com"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone (optional)
+                      </label>
                       <Input
                         id="phone"
+                        name="phone"
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="Enter your phone number (optional)"
+                        onChange={handleChange}
+                        placeholder="+1 (234) 567-890"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="message">Message *</Label>
+                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                        Message *
+                      </label>
                       <Textarea
                         id="message"
-                        value={formData.message}
-                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        required
-                        placeholder="Tell us how we can help you..."
+                        name="message"
                         rows={6}
+                        required
+                        value={formData.message}
+                        onChange={handleChange}
+                        placeholder="Tell us how we can help you..."
                       />
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Sending...' : (
+                    <Button type="submit" disabled={isSubmitting} className="w-full">
+                      {isSubmitting ? (
+                        'Sending...'
+                      ) : (
                         <>
                           <Send className="h-4 w-4 mr-2" />
                           Send Message

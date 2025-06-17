@@ -1,24 +1,26 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock, User, BookOpen } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Search, Calendar, User, BookOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { SEOHead } from '@/components/SEOHead';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 interface BlogPost {
   id: string;
   title: string;
+  summary: string | null;
   slug: string;
-  summary: string;
-  featured_image: string;
-  category: string;
-  tags: string[];
-  read_time: number;
+  featured_image: string | null;
   created_at: string;
+  category: string | null;
+  read_time: number | null;
+  author_id: string | null;
   profiles: {
     username: string;
     full_name: string;
@@ -27,178 +29,201 @@ interface BlogPost {
 
 const Blog = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "Blog" }
+  ];
+
   useEffect(() => {
-    fetchBlogPosts();
+    fetchPosts();
   }, []);
 
-  const fetchBlogPosts = async () => {
-    // First get blog posts
-    const { data: postsData, error: postsError } = await supabase
-      .from('blog_posts')
-      .select('*')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false });
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = posts.filter(post =>
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (post.summary && post.summary.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (post.category && post.category.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setFilteredPosts(filtered);
+    } else {
+      setFilteredPosts(posts);
+    }
+  }, [searchTerm, posts]);
 
-    if (postsError) {
-      console.error('Error fetching blog posts:', postsError);
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select(`
+          id,
+          title,
+          summary,
+          slug,
+          featured_image,
+          created_at,
+          category,
+          read_time,
+          author_id,
+          profiles:author_id (
+            username,
+            full_name
+          )
+        `)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPosts(data || []);
+      setFilteredPosts(data || []);
+    } catch (error) {
+      console.error('Error fetching blog posts:', error);
+    } finally {
       setLoading(false);
-      return;
     }
+  };
 
-    if (!postsData || postsData.length === 0) {
-      setPosts([]);
-      setLoading(false);
-      return;
-    }
-
-    // Get unique author IDs
-    const authorIds = [...new Set(postsData.map(post => post.author_id).filter(Boolean))];
-
-    if (authorIds.length === 0) {
-      // No authors to fetch, set posts without profiles
-      const postsWithoutProfiles = postsData.map(post => ({
-        ...post,
-        profiles: null
-      }));
-      setPosts(postsWithoutProfiles);
-      setLoading(false);
-      return;
-    }
-
-    // Get profiles for these authors
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, username, full_name')
-      .in('id', authorIds);
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-    }
-
-    // Create a map of author_id to profile
-    const profilesMap = new Map();
-    if (profilesData) {
-      profilesData.forEach(profile => {
-        profilesMap.set(profile.id, profile);
-      });
-    }
-
-    // Combine posts with profiles
-    const postsWithProfiles = postsData.map(post => ({
-      ...post,
-      profiles: post.author_id ? profilesMap.get(post.author_id) || null : null
-    }));
-
-    setPosts(postsWithProfiles);
-    setLoading(false);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEOHead 
+        title="Blog - DealSpark | Deal Hunting Tips & Shopping Guides"
+        description="Read our latest articles about deal hunting, shopping tips, and money-saving guides. Stay updated with the best deals and shopping strategies."
+        keywords="blog, deal hunting, shopping tips, money saving, guides, articles"
+        canonical={`${window.location.origin}/blog`}
+        ogTitle="Blog - DealSpark"
+        ogDescription="Deal hunting tips and shopping guides"
+        ogUrl={`${window.location.origin}/blog`}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "Blog",
+          "name": "DealSpark Blog",
+          "description": "Deal hunting tips and shopping guides",
+          "url": `${window.location.origin}/blog`
+        }}
+      />
       <Header />
+      
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
+          <Breadcrumbs items={breadcrumbItems} className="mb-6" />
+          
+          {/* Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-4">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <BookOpen className="h-6 w-6 text-primary" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">DealSpark Blog</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Blog</h1>
             </div>
-            <p className="text-gray-600">
-              Stay updated with the latest money-saving tips, deal guides, and shopping strategies
+            <p className="text-gray-600 mb-6">
+              Deal hunting tips, shopping guides, and money-saving strategies
             </p>
+
+            {/* Search */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search articles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
 
+          {/* Blog Posts Grid */}
           {loading ? (
-            <div className="space-y-6">
-              {Array.from({ length: 5 }).map((_, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i}>
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      <Skeleton className="w-full md:w-48 h-32" />
-                      <div className="flex-1 space-y-3">
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-2/3" />
-                        <div className="flex space-x-4">
-                          <Skeleton className="h-4 w-20" />
-                          <Skeleton className="h-4 w-16" />
-                        </div>
-                      </div>
-                    </div>
+                  <Skeleton className="h-48 w-full rounded-t-lg" />
+                  <CardHeader>
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-3 w-full mb-2" />
+                    <Skeleton className="h-3 w-2/3" />
                   </CardContent>
                 </Card>
               ))}
             </div>
-          ) : posts.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No blog posts yet
-                </h3>
-                <p className="text-gray-600">
-                  Check back soon for money-saving tips and deal guides!
-                </p>
-              </CardContent>
-            </Card>
+          ) : filteredPosts.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {searchTerm ? 'No articles found' : 'No articles available'}
+              </h3>
+              <p className="text-gray-600">
+                {searchTerm ? 'Try adjusting your search terms' : 'Check back later for new articles'}
+              </p>
+            </div>
           ) : (
-            <div className="space-y-6">
-              {posts.map((post) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPosts.map((post) => (
                 <Card key={post.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      {/* Featured Image */}
-                      <div className="w-full md:w-48 h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                        {post.featured_image ? (
-                          <img
-                            src={post.featured_image}
-                            alt={post.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                            <BookOpen className="h-8 w-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Badge variant="secondary">{post.category}</Badge>
-                          {post.tags && post.tags.slice(0, 2).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
+                  {post.featured_image && (
+                    <div className="aspect-video overflow-hidden rounded-t-lg">
+                      <img
+                        src={post.featured_image}
+                        alt={post.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+                  
+                  <CardHeader>
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{formatDate(post.created_at)}</span>
+                      {post.read_time && (
+                        <>
+                          <span>•</span>
+                          <span>{post.read_time} min read</span>
+                        </>
+                      )}
+                    </div>
+                    
+                    <CardTitle className="line-clamp-2 hover:text-primary">
+                      <Link to={`/blog/${post.slug}`}>
+                        {post.title}
+                      </Link>
+                    </CardTitle>
+                    
+                    {post.summary && (
+                      <CardDescription className="line-clamp-3">
+                        {post.summary}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      {post.category && (
+                        <Badge variant="secondary">
+                          {post.category}
+                        </Badge>
+                      )}
+                      
+                      {post.profiles && (
+                        <div className="flex items-center space-x-1 text-sm text-gray-500">
+                          <User className="h-3 w-3" />
+                          <span>{post.profiles.full_name || post.profiles.username}</span>
                         </div>
-
-                        <Link to={`/blog/${post.slug}`}>
-                          <h2 className="text-xl font-semibold text-gray-900 mb-2 hover:text-primary transition-colors">
-                            {post.title}
-                          </h2>
-                        </Link>
-
-                        <p className="text-gray-600 mb-4 line-clamp-2">
-                          {post.summary}
-                        </p>
-
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <User className="h-4 w-4" />
-                            <span>{post.profiles?.full_name || post.profiles?.username || 'Anonymous'}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{post.read_time} min read</span>
-                          </div>
-                          <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
