@@ -1,5 +1,5 @@
 
-import { Home, Package, Store, BookOpen, Mail, Settings, Shield } from "lucide-react";
+import { Home, Package, Store, BookOpen, Mail, Settings, Shield, Search, LogIn } from "lucide-react";
 import Index from "./pages/Index";
 import AllDeals from "./pages/AllDeals";
 import Shops from "./pages/Shops";
@@ -7,6 +7,9 @@ import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import StaticPage from "./pages/StaticPage";
 import RootDashboard from "./pages/RootDashboard";
+import Auth from "./pages/Auth";
+import SearchResults from "./pages/SearchResults";
+import RootLogin from "./pages/RootLogin";
 
 export const navItems = [
   {
@@ -50,5 +53,23 @@ export const navItems = [
     to: "/root-dashboard",
     icon: <Shield className="h-4 w-4" />,
     page: <RootDashboard />,
+  },
+  {
+    title: "Auth",
+    to: "/auth",
+    icon: <LogIn className="h-4 w-4" />,
+    page: <Auth />,
+  },
+  {
+    title: "Search",
+    to: "/search",
+    icon: <Search className="h-4 w-4" />,
+    page: <SearchResults />,
+  },
+  {
+    title: "Root Login",
+    to: "/root/login",
+    icon: <Shield className="h-4 w-4" />,
+    page: <RootLogin />,
   },
 ];
