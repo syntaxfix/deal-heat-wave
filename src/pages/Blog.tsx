@@ -21,10 +21,6 @@ interface BlogPost {
   category: string | null;
   read_time: number | null;
   author_id: string | null;
-  profiles: {
-    username: string;
-    full_name: string;
-  } | null;
 }
 
 const Blog = () => {
@@ -68,11 +64,7 @@ const Blog = () => {
           created_at,
           category,
           read_time,
-          author_id,
-          profiles:author_id (
-            username,
-            full_name
-          )
+          author_id
         `)
         .eq('status', 'published')
         .order('created_at', { ascending: false });
@@ -218,12 +210,10 @@ const Blog = () => {
                         </Badge>
                       )}
                       
-                      {post.profiles && (
-                        <div className="flex items-center space-x-1 text-sm text-gray-500">
-                          <User className="h-3 w-3" />
-                          <span>{post.profiles.full_name || post.profiles.username}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center space-x-1 text-sm text-gray-500">
+                        <User className="h-3 w-3" />
+                        <span>Author</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
