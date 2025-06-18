@@ -11,36 +11,39 @@ import Category from "./pages/Category";
 import TagPage from "./pages/TagPage";
 import BlogPost from "./pages/BlogPost";
 import NotFound from "./pages/NotFound";
+import { CurrencyProvider } from "./hooks/useCurrency";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <BrowserRouter>
-        <div className="min-h-screen flex flex-col">
-          <div className="flex-1">
-            <Routes>
-              {navItems.map(({ to, page }) => {
-                if (to === "*") {
-                  return <Route key="404" path="*" element={page} />;
-                }
-                return <Route key={to} path={to} element={page} />;
-              })}
-              
-              {/* Dynamic routes for deal details, shop details, etc. */}
-              <Route path="/deal/:slug" element={<DealDetail />} />
-              <Route path="/shop/:slug" element={<ShopDetail />} />
-              <Route path="/category/:slug" element={<Category />} />
-              <Route path="/tag/:slug" element={<TagPage />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/page/:slug" element={navItems.find(item => item.to === "/page/:slug")?.page} />
-            </Routes>
+      <CurrencyProvider>
+        <Toaster />
+        <BrowserRouter>
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-1">
+              <Routes>
+                {navItems.map(({ to, page }) => {
+                  if (to === "*") {
+                    return <Route key="404" path="*" element={page} />;
+                  }
+                  return <Route key={to} path={to} element={page} />;
+                })}
+                
+                {/* Dynamic routes for deal details, shop details, etc. */}
+                <Route path="/deal/:slug" element={<DealDetail />} />
+                <Route path="/shop/:slug" element={<ShopDetail />} />
+                <Route path="/category/:slug" element={<Category />} />
+                <Route path="/tag/:slug" element={<TagPage />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/page/:slug" element={navItems.find(item => item.to === "/page/:slug")?.page} />
+              </Routes>
+            </div>
+            <Footer />
           </div>
-          <Footer />
-        </div>
-      </BrowserRouter>
+        </BrowserRouter>
+      </CurrencyProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
