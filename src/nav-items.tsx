@@ -72,7 +72,7 @@ export const navItems = [
   },
   {
     title: "Root Dashboard",
-    to: "/root-dashboard",
+    to: "/root/dashboard",
     icon: <Shield className="h-4 w-4" />,
     page: <RootDashboard />,
   },
