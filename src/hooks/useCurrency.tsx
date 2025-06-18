@@ -46,8 +46,8 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) throw error;
 
-        const settings = data.reduce((acc, item) => {
-          if (item.key) acc[item.key] = item.value;
+        const settings = data.reduce((acc, { key, value }) => {
+          if (key) acc[key] = value;
           return acc;
         }, {} as { [key: string]: string | null });
 
@@ -80,21 +80,18 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
         },
         (payload) => {
           console.log('Currency setting changed:', payload);
-          if (payload.new && typeof payload.new === 'object' && payload.new !== null) {
-            const newRecord = payload.new as { key?: string; value?: string };
-            if (newRecord.key === 'site_currency' && newRecord.value) {
-              const newCurrency = newRecord.value;
-              if (currencies[newCurrency as keyof typeof currencies]) {
-                setCurrency(newCurrency);
-                localStorage.setItem('site_currency', newCurrency);
-                setCountry(currencies[newCurrency as keyof typeof currencies].country);
-                localStorage.setItem('site_country', currencies[newCurrency as keyof typeof currencies].country);
-              }
+          if (payload.new && payload.new.key === 'site_currency') {
+            const newCurrency = payload.new.value;
+            if (currencies[newCurrency as keyof typeof currencies]) {
+              setCurrency(newCurrency);
+              localStorage.setItem('site_currency', newCurrency);
+              setCountry(currencies[newCurrency as keyof typeof currencies].country);
+              localStorage.setItem('site_country', currencies[newCurrency as keyof typeof currencies].country);
             }
-            if (newRecord.key === 'site_country' && newRecord.value) {
-              setCountry(newRecord.value);
-              localStorage.setItem('site_country', newRecord.value);
-            }
+          }
+          if (payload.new && payload.new.key === 'site_country') {
+            setCountry(payload.new.value);
+            localStorage.setItem('site_country', payload.new.value);
           }
         }
       )
