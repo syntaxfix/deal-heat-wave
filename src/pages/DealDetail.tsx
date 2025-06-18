@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrency } from '@/hooks/useCurrency';
 import VotingSystem from '@/components/VotingSystem';
 import CommentSection from '@/components/CommentSection';
 import Header from '@/components/Header';
@@ -56,6 +58,7 @@ interface Profile {
 const DealDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const [deal, setDeal] = useState<Deal | null>(null);
   const [dealAuthor, setDealAuthor] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -312,10 +315,10 @@ const DealDetail = () => {
                           {deal.original_price && deal.discounted_price && (
                             <>
                               <span className="text-2xl font-bold text-green-600">
-                                £{deal.discounted_price.toFixed(2)}
+                                {formatPrice(deal.discounted_price)}
                               </span>
                               <span className="text-lg text-gray-500 line-through">
-                                £{deal.original_price.toFixed(2)}
+                                {formatPrice(deal.original_price)}
                               </span>
                               {deal.discount_percentage && (
                                 <Badge variant="destructive" className="text-sm">

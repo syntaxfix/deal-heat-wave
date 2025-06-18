@@ -66,6 +66,40 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchCurrencySettings();
+
+    // Set up real-time subscription for currency changes
+    const channel = supabase
+      .channel('currency_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'system_settings',
+          filter: 'key=in.(site_currency,site_country)'
+        },
+        (payload) => {
+          console.log('Currency setting changed:', payload);
+          if (payload.new && payload.new.key === 'site_currency') {
+            const newCurrency = payload.new.value;
+            if (currencies[newCurrency as keyof typeof currencies]) {
+              setCurrency(newCurrency);
+              localStorage.setItem('site_currency', newCurrency);
+              setCountry(currencies[newCurrency as keyof typeof currencies].country);
+              localStorage.setItem('site_country', currencies[newCurrency as keyof typeof currencies].country);
+            }
+          }
+          if (payload.new && payload.new.key === 'site_country') {
+            setCountry(payload.new.value);
+            localStorage.setItem('site_country', payload.new.value);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const currencySymbol = currencies[currency as keyof typeof currencies]?.symbol || '$';

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrency } from '@/hooks/useCurrency';
 import Header from '@/components/Header';
 import DealListings from '@/components/DealListings';
 import FilterBar from '@/components/FilterBar';
@@ -17,6 +18,7 @@ interface Shop {
 }
 
 const AllDeals = () => {
+  const { currency, currencySymbol } = useCurrency();
   const [shops, setShops] = useState<Shop[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedShop, setSelectedShop] = useState('');

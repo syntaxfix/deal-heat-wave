@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrency } from '@/hooks/useCurrency';
 import Header from '@/components/Header';
 import DealListings from '@/components/DealListings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,6 +75,7 @@ interface PageCategory {
 
 const ShopDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { formatPrice } = useCurrency();
   const [shop, setShop] = useState<Shop | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [otherShops, setOtherShops] = useState<OtherShop[]>([]);
@@ -390,7 +393,7 @@ const ShopDetail = () => {
                             <p>Save {coupon.discount_percentage}%</p>
                           )}
                           {coupon.discount_amount && (
-                            <p>Save ${coupon.discount_amount}</p>
+                            <p>Save {formatPrice(coupon.discount_amount)}</p>
                           )}
                           {coupon.expires_at && (
                             <p>Expires: {new Date(coupon.expires_at).toLocaleDateString()}</p>
