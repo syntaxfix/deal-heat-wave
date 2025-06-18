@@ -80,18 +80,20 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
         },
         (payload) => {
           console.log('Currency setting changed:', payload);
-          if (payload.new && payload.new.key === 'site_currency') {
-            const newCurrency = payload.new.value;
-            if (currencies[newCurrency as keyof typeof currencies]) {
-              setCurrency(newCurrency);
-              localStorage.setItem('site_currency', newCurrency);
-              setCountry(currencies[newCurrency as keyof typeof currencies].country);
-              localStorage.setItem('site_country', currencies[newCurrency as keyof typeof currencies].country);
+          if (payload.new && typeof payload.new === 'object' && 'key' in payload.new && 'value' in payload.new) {
+            if (payload.new.key === 'site_currency') {
+              const newCurrency = payload.new.value as string;
+              if (currencies[newCurrency as keyof typeof currencies]) {
+                setCurrency(newCurrency);
+                localStorage.setItem('site_currency', newCurrency);
+                setCountry(currencies[newCurrency as keyof typeof currencies].country);
+                localStorage.setItem('site_country', currencies[newCurrency as keyof typeof currencies].country);
+              }
             }
-          }
-          if (payload.new && payload.new.key === 'site_country') {
-            setCountry(payload.new.value);
-            localStorage.setItem('site_country', payload.new.value);
+            if (payload.new.key === 'site_country') {
+              setCountry(payload.new.value as string);
+              localStorage.setItem('site_country', payload.new.value as string);
+            }
           }
         }
       )

@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Clock, ExternalLink, Store, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface Deal {
   id: string;
@@ -32,6 +33,7 @@ interface DealCardFullProps {
 }
 
 const DealCardFull = ({ deal }: DealCardFullProps) => {
+  const { formatPrice } = useCurrency();
   const {
     id,
     title,
@@ -149,14 +151,14 @@ const DealCardFull = ({ deal }: DealCardFullProps) => {
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-3">
                     <span className="text-3xl font-bold text-green-600">
-                      ${discounted_price.toFixed(2)}
+                      {formatPrice(discounted_price)}
                     </span>
                     <span className="text-lg text-gray-500 line-through">
-                      ${original_price.toFixed(2)}
+                      {formatPrice(original_price)}
                     </span>
                   </div>
                   <div className="text-sm text-gray-600 bg-green-100 px-2 py-1 rounded">
-                    Save ${(original_price - discounted_price).toFixed(2)}
+                    Save {formatPrice(original_price - discounted_price)}
                   </div>
                 </div>
               )}

@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,6 +7,7 @@ import { Clock, ExternalLink, Store } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import VotingSystem from './VotingSystem';
 import { Button } from '@/components/ui/button';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface Deal {
   id: string;
@@ -31,6 +33,7 @@ interface DealCardCompactProps {
 }
 
 const DealCardCompact = ({ deal }: DealCardCompactProps) => {
+  const { formatPrice } = useCurrency();
   const {
     id,
     title,
@@ -113,10 +116,10 @@ const DealCardCompact = ({ deal }: DealCardCompactProps) => {
                 {original_price > 0 && discounted_price > 0 && (
                   <div className="flex items-center space-x-2">
                     <span className="text-lg font-bold text-green-600">
-                      ${discounted_price.toFixed(2)}
+                      {formatPrice(discounted_price)}
                     </span>
                     <span className="text-xs text-gray-500 line-through">
-                      ${original_price.toFixed(2)}
+                      {formatPrice(original_price)}
                     </span>
                   </div>
                 )}

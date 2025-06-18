@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCurrency } from '@/hooks/useCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { User, Package, Filter, Edit2, Save, X } from 'lucide-react';
+import { User, Package, Filter, Edit2, Save, X, MessageSquare } from 'lucide-react';
 import Header from '@/components/Header';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,6 +39,7 @@ interface UserProfile {
 
 export default function Profile() {
   const { user } = useAuth();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -166,7 +168,7 @@ export default function Profile() {
             </div>
             <h1 className="text-3xl font-bold">My Profile</h1>
           </div>
-          <p className="text-gray-600">Manage your account and view your deal submissions</p>
+          <p className="text-gray-600">Manage your account and view your activity</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -255,7 +257,7 @@ export default function Profile() {
             {/* Stats Card */}
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Deal Statistics</CardTitle>
+                <CardTitle>Statistics</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -280,106 +282,127 @@ export default function Profile() {
             </Card>
           </div>
 
-          {/* Deals Section */}
+          {/* Activity Tabs Section */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Package className="h-5 w-5" />
-                      <span>My Deals</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Manage and track your deal submissions
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Filter className="h-4 w-4 text-gray-500" />
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All ({deals.length})</SelectItem>
-                        <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
-                        <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
-                        <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <CardTitle>My Activity</CardTitle>
+                <CardDescription>
+                  View and manage your submitted content
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {filteredDeals.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {statusFilter === 'all' ? 'No deals submitted yet' : `No ${statusFilter} deals`}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      {statusFilter === 'all' 
-                        ? 'Start sharing amazing deals with the community!'
-                        : `You don't have any ${statusFilter} deals at the moment.`
-                      }
-                    </p>
-                    {statusFilter === 'all' && (
-                      <Button onClick={() => navigate('/post-deal')}>
-                        Submit Your First Deal
-                      </Button>
+                <Tabs defaultValue="deals" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="deals" className="flex items-center space-x-2">
+                      <Package className="h-4 w-4" />
+                      <span>My Deals ({deals.length})</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="comments" className="flex items-center space-x-2">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Comments (0)</span>
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="deals" className="mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-2">
+                        <Filter className="h-4 w-4 text-gray-500" />
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All ({deals.length})</SelectItem>
+                            <SelectItem value="approved">Approved ({getStatusCount('approved')})</SelectItem>
+                            <SelectItem value="pending">Pending ({getStatusCount('pending')})</SelectItem>
+                            <SelectItem value="rejected">Rejected ({getStatusCount('rejected')})</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {filteredDeals.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          {statusFilter === 'all' ? 'No deals submitted yet' : `No ${statusFilter} deals`}
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          {statusFilter === 'all' 
+                            ? 'Start sharing amazing deals with the community!'
+                            : `You don't have any ${statusFilter} deals at the moment.`
+                          }
+                        </p>
+                        {statusFilter === 'all' && (
+                          <Button onClick={() => navigate('/post-deal')}>
+                            Submit Your First Deal
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {filteredDeals.map((deal) => (
+                          <Card key={deal.id} className="border">
+                            <CardContent className="pt-4">
+                              <div className="flex items-start space-x-4">
+                                {deal.image_url && (
+                                  <img
+                                    src={deal.image_url}
+                                    alt={deal.title}
+                                    className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <h3 className="text-lg font-medium text-gray-900 truncate">
+                                        {deal.title}
+                                      </h3>
+                                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                        {deal.description}
+                                      </p>
+                                    </div>
+                                    <Badge variant={getStatusBadgeVariant(deal.status)} className="ml-2">
+                                      {deal.status}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between mt-3">
+                                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                      <span>
+                                        {formatPrice(deal.original_price)} → {formatPrice(deal.discounted_price)}
+                                      </span>
+                                      <span>
+                                        {deal.upvotes} upvotes
+                                      </span>
+                                      <span>
+                                        Heat: {deal.heat_score}
+                                      </span>
+                                    </div>
+                                    <span className="text-sm text-gray-500">
+                                      {new Date(deal.created_at).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                     )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredDeals.map((deal) => (
-                      <Card key={deal.id} className="border">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start space-x-4">
-                            {deal.image_url && (
-                              <img
-                                src={deal.image_url}
-                                alt={deal.title}
-                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <h3 className="text-lg font-medium text-gray-900 truncate">
-                                    {deal.title}
-                                  </h3>
-                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                    {deal.description}
-                                  </p>
-                                </div>
-                                <Badge variant={getStatusBadgeVariant(deal.status)} className="ml-2">
-                                  {deal.status}
-                                </Badge>
-                              </div>
-                              
-                              <div className="flex items-center justify-between mt-3">
-                                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  <span>
-                                    ${deal.original_price} → ${deal.discounted_price}
-                                  </span>
-                                  <span>
-                                    {deal.upvotes} upvotes
-                                  </span>
-                                  <span>
-                                    Heat: {deal.heat_score}
-                                  </span>
-                                </div>
-                                <span className="text-sm text-gray-500">
-                                  {new Date(deal.created_at).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                  </TabsContent>
+                  
+                  <TabsContent value="comments" className="mt-6">
+                    <div className="text-center py-8">
+                      <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No comments yet</h3>
+                      <p className="text-gray-600">
+                        Your comments on deals and posts will appear here.
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
